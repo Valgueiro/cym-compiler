@@ -1,14 +1,12 @@
 grammar Cymbol;
 
-
-
 //Lexer
 fragment NUMBER    : [0-9];
 fragment LETTER    : [a-zA-Z];
-fragment UNDERLINE : '_';
 
 TYPEINT  : 'int';
-TYPEVOID : 'void';
+TYPEFLOAT  : 'float';
+TYPEBOOLEAN : 'boolean';
 
 IF     : 'if';
 ELSE   : 'else';
@@ -33,28 +31,31 @@ MUL   : '*';
 DIV   : '/';
 PLUS  : '+';
 MINUS : '-';
+AND   : '&&';
+OR    : '||';
 
-ID  : (UNDERLINE | LETTER) (UNDERLINE | LETTER | NUMBER)*;
+BOOLEAN:  'true' | 'false';
+ID  : (LETTER) (LETTER | NUMBER)*;
 INT : NUMBER+;
+FLOAT:  NUMBER+ '.' NUMBER+;
 
 BLOCKCOMMENT : '/*' .*? '*/' -> skip;
 LINECOMMENT  : '//' .*? '\n' -> skip;
 WS           : [ \t\n\r]+ -> skip;
 
-
-
 //Parser
 fiile : (funcDecl | varDecl)+ EOF?
-      ;
+     ;
 
-varDecl : tyype ID ('=' expr)? ';'
+varDecl : type ID ('=' expr)? ';'
         ;
 
-tyype : TYPEINT                                   #FormTypeInt
-      | TYPEVOID                                  #FormTypeVoid
-      ;
+tyype : TYPEINT                                  
+     | TYPEFLOAT                                 
+     | TYPEBOOLEAN                               
+     ;
 
-funcDecl : tyype ID '(' paramTypeList? ')' block
+funcDecl : type ID '(' paramTypeList? ')' block
          ;
 
 paramTypeList : paramType (',' paramType)*
@@ -82,16 +83,16 @@ ifElseExprStat : block
                | exprStat
                ;
 
-exprStat : expr ';'
-         ;
-
-exprList : expr (',' expr)* 
-         ;
-
 ifStat : 'if' '(' expr ')' ifElseExprStat
        ;
 
 elseStat : 'else' ifElseExprStat
+         ;
+
+exprStat : expr ';'
+         ;
+
+exprList : expr (',' expr)* 
          ;
 
 stat : varDecl
@@ -101,14 +102,17 @@ stat : varDecl
      | exprStat
      ;
 
-expr : ID '(' exprList? ')'                      #FunctionCallExpr
-     | op=('+' | '-') expr                       #SignedExpr
-     | '!' expr                                  #NotExpr
-     | expr op=('<' | '>' | '<=' | '>=') expr    #ComparisonExpr
-     | expr op=('*' | '/') expr                  #MulDivExpr
-     | expr op=('+' | '-') expr                  #AddSubExpr
-     | expr op=('==' | '!=') expr                #EqExpr
-     | ID                                        #VarIdExpr
-     | INT                                       #IntExpr
-     | '(' expr ')'                              #ParenExpr
+expr : ID '(' exprList? ')'                      
+     | op=('+' | '-') expr                       
+     | '!' expr                                  
+     | expr op=('<' | '>' | '<=' | '>=') expr    
+     | expr op=('*' | '/') expr                  
+     | expr op=('+' | '-') expr                  
+     | expr op=("&&"|"||") expr                  
+     | expr op=("=="|"!=") expr                 
+     | ID                                        
+     | INT                                       
+     | FLOAT                                     
+     | BOOLEAN                                  
+     | '(' expr ')'                             
      ;

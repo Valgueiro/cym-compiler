@@ -15,7 +15,6 @@ class CymbolCheckerVisitor(CymbolVisitor):
 		return Type.INT
 
 
-
 	def visitVarDecl(self, ctx:CymbolParser.VarDeclContext):
 		var_name = ctx.ID().getText()
 		tyype = ctx.tyype().getText()
