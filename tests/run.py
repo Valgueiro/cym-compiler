@@ -3,7 +3,6 @@ import difflib
 import subprocess
 from colorama import Fore, Style  # pip install colorama
 import difflib
-import sys
 
 INPUTS_FOLDER = "tests/inputs/"
 EXPECTED_FOLDER = "tests/outputs/"
@@ -62,12 +61,4 @@ def generate_cases():
             ["make"], stdin=open(INPUTS_FOLDER + input_file)).decode()
         os.rename(INPUTS_FOLDER + generated_file, EXPECTED_FOLDER + generated_file)
 
-def main():
-    if sys.argv[0] == 'test':
-        run_tests()
-    elif sys.argv[0] == 'generate':
-        generate_cases()
-        
-
-if __name__ == "__main__":
-    main()
+run_tests()

@@ -3,5 +3,5 @@ int create(){
 }
 
 int main(){
-    return create;
+    return create();
 }
