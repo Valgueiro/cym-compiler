@@ -45,7 +45,6 @@ def run_test(input_file, expected_file):
     except subprocess.CalledProcessError as e:
         print(Fore.RED + "COMPILATION ERROR!")
         print("Error on test: " + input_file)
-        print(Fore.YELLOW + e.output.decode())
 
 
 def run_tests():
