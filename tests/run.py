@@ -3,6 +3,7 @@ import difflib
 import subprocess
 from colorama import Fore, Style  # pip install colorama
 import difflib
+import sys
 
 INPUTS_FOLDER = "tests/inputs/"
 EXPECTED_FOLDER = "tests/outputs/"
@@ -44,7 +45,7 @@ def run_test(input_file, expected_file):
     except subprocess.CalledProcessError as e:
         print(Fore.RED + "COMPILATION ERROR!")
         print("Error on test: " + input_file)
-        print(Fore.YELLOW + e.output)
+        print(Fore.YELLOW + e.output.decode())
 
 
 def run_tests():
@@ -53,12 +54,15 @@ def run_tests():
         expected_file = input_file.replace('.c', '') + ".ll"
         run_test(input_file, expected_file)
 
-def generate_cases():
-    print(Fore.WHITE + "-------------------- Genarating Expected Files -------------------")
-    for input_file in os.listdir(INPUTS_FOLDER):
-        generated_file = input_file.replace('.c', '') + ".ll"
-        subprocess.check_output(
-            ["make"], stdin=open(INPUTS_FOLDER + input_file)).decode()
-        os.rename(INPUTS_FOLDER + generated_file, EXPECTED_FOLDER + generated_file)
 
-run_tests()
+def main():
+    if sys.argv[1] is not None:
+        print(Fore.WHITE + "---------- Initiating "+ sys.argv[1] +" test -------------")
+        expected_file = sys.argv[1].replace('.c', '') + ".ll"
+        run_test(sys.argv[1], expected_file)
+    else:
+        run_tests()
+
+
+if __name__ == "__main__":
+    main()
