@@ -35,7 +35,7 @@ class CymbolCheckerVisitor(CymbolVisitor):
 			file.write(output)
 
 	def visitFuncDecl(self, ctx:CymbolParser.FuncDeclContext):
-		tyype = TypeEnum(ctx.tyype().getText())
+		tyype = TypeEnum(ctx.tyype().getText()).get_llvm_type()
 		name = ctx.ID().getText()
 
 		block = ""
@@ -46,9 +46,9 @@ class CymbolCheckerVisitor(CymbolVisitor):
 					block += "  " + ret
 
 	
-		out = "define " + tyype.get_llvm_type() + " @" + name +"() #0{\n"
+		out = f'define {tyype} @ {name}() #0 {{ \n'
 		out += block
-		out += "\n}"
+		out += "\n}\n"
 
 		return out 
 
@@ -70,7 +70,18 @@ class CymbolCheckerVisitor(CymbolVisitor):
 		return out
 
 	def visitIntExpr(self, ctx:CymbolParser.IntExprContext):
-		t = TypeEnum.INT.get_llvm_type()
-		print(t)
-		return 'i32 ' + ctx.getText()
+		tyype = TypeEnum.INT.get_llvm_type()
+		return f'{tyype} {ctx.getText()}'
+
+	def visitFloatExpr(self, ctx:CymbolParser.FloatExprContext):
+		# TODO probably we will have to transform text to hexadecimal
+		tyype = TypeEnum.FLOAT.get_llvm_type()
+		return f'{tyype} {ctx.getText()}'
+	
+	def visitBooleanExpr(self, ctx:CymbolParser.BooleanExprContext):
+		# TODO check if it is using it right. I think it uses i32 (like int) instead
+		tyype = TypeEnum.BOOLEAN.get_llvm_type()
+		value = 1 if ctx.getText() == 'true' else 0
+		
+		return f'{tyype} {value}'
     
