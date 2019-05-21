@@ -13,9 +13,9 @@ Modifique os arquivos grammars/Cymbol.g4 e CymbolCheckerVisitor.py
 <br>
 `make tree`		        : compila e desenha a árvore sintática das expressões dadas como entrada 
 <br>
-`make tree < arquivo.txt` : o mesmo, mas etc.
-`python tests/run.py` : Rodar os testes presentes na pasta tests/inputs
-`python tests/run.py <test>` : Rodar apenas um teste especifico presente na pasta tests/inputs
+`make tree < arquivo.txt` : o mesmo, mas etc. <br>
+`python tests/run.py` : Rodar os testes presentes na pasta tests/inputs  <br>
+`python tests/run.py <test>` : Rodar apenas um teste especifico presente na pasta tests/inputs <br>
 
 
 obs2: [ctrl]+[d] insere EOF (end of file) no terminal
