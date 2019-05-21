@@ -46,7 +46,7 @@ class CymbolCheckerVisitor(CymbolVisitor):
 					block += "  " + ret
 
 	
-		out = f'define {tyype} @ {name}() #0 {{ \n'
+		out = f'define {tyype} @{name}() #0 {{ \n'
 		out += block
 		out += "\n}\n"
 
