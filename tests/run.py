@@ -42,7 +42,7 @@ def run_test(input_file, expected_file):
             print(Fore.YELLOW + "Compilation Messages:")
             print(out)
 
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError:
         print(Fore.RED + "COMPILATION ERROR!")
         print("Error on test: " + input_file)
 

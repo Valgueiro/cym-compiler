@@ -102,17 +102,17 @@ stat : varDecl
      | exprStat
      ;
 
-expr : ID '(' exprList? ')'                      
-     | op=('+' | '-') expr                       
-     | '!' expr                                  
-     | expr op=('<' | '>' | '<=' | '>=') expr    
-     | expr op=('*' | '/') expr                  
-     | expr op=('+' | '-') expr                  
-     | expr op=('&&'|'||') expr                  
-     | expr op=('=='|'!=') expr                 
-     | ID                                        
-     | INT                                       
-     | FLOAT                                     
-     | BOOLEAN                                  
-     | '(' expr ')'                             
+expr : ID '(' exprList? ')'                      #FuncCallExpr
+     | op=('+' | '-') expr                       #PlusMinusExpr
+     | '!' expr                                  #NotExpr
+     | expr op=('<' | '>' | '<=' | '>=') expr    #CompExpr
+     | expr op=('*' | '/') expr                  #MultDivExpr
+     | expr op=('+' | '-') expr                  #SumSubExpr
+     | expr op=('&&'|'||') expr                  #AndOrExpr
+     | expr op=('=='|'!=') expr                  #EqualNotEqualExpr
+     | ID                                        #IDExpr
+     | INT                                       #IntExpr              
+     | FLOAT                                     #FloatExpr
+     | BOOLEAN                                   #BooleanExpr
+     | '(' expr ')'                              #ParenExpr
      ;

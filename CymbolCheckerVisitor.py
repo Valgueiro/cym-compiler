@@ -53,22 +53,32 @@ class CymbolCheckerVisitor(CymbolVisitor):
 			for stat in ctx.block().stat():
 				ret = self.visit(stat)
 				if ret is not None:
-					block += ret
+					block += "  " + ret
 
-		print(tyype)
-		print(name)
-		print(block)
-
+	
 		out = "define " + tyype.get_llvm_type() + " @" + name +"() #0{\n"
 		out += block
-		out += "}"
+		out += "\n}"
 
 		return out 
 
 
-
 	def visitVarDecl(self, ctx:CymbolParser.VarDeclContext):
-		# print("var decl")
-		return "    ret i32 42\n"
+		tyype = Type(ctx.tyype().getText())
+		name = ctx.ID().getText()
+		out = tyype.get_llvm_type() + " " + name + ";\n"
+		return out
 
+	def visitReturnStat(self, ctx:CymbolParser.ReturnStatContext):
+		expr = self.visit(ctx.expr())
+		
+		out = "ret "
+		if expr:
+			out += expr
+
+		print(out)
+		return out
+
+	def visitIntExpr(self, ctx:CymbolParser.IntExprContext):
+		return 'i32 ' + ctx.getText()
     
