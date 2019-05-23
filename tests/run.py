@@ -55,7 +55,7 @@ def run_tests():
 
 
 def main():
-    if sys.argv[1] is not None:
+    if len(sys.argv) > 1:
         print(Fore.WHITE + "---------- Initiating "+ sys.argv[1] +" test -------------")
         expected_file = sys.argv[1].replace('.c', '') + ".ll"
         run_test(sys.argv[1], expected_file)
