@@ -2,4 +2,5 @@
 /antlr-cymbol-grammar-checker-types/*
 /.vscode/*
 /grammars/.antlr/*
-/autogen/
+/autogen/*
+*.pyc
