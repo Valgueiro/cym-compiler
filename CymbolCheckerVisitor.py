@@ -24,7 +24,7 @@ class TypeEnum(Enum):
 
 
 class Expr():
-    def __init__(self, tyype, value, declarations=""):
+    def __init__(self, tyype, value, loaded=False, declarations=""):
         """
         Initialize Expr Object
         :param: tyype - type of the expr
@@ -33,8 +33,8 @@ class Expr():
         """
         self.type = tyype
         self.value = value
+        self.loaded = loaded
         self.declarations = declarations
-        self.loaded = False
 
     def load(self):
         """
@@ -50,26 +50,28 @@ class Expr():
         """
         if self.loaded:
             return self.value
-    
+
         return self.load()
-    
+
     def __str__(self):
-        return f'{{value: {self.value}; type: {self.type}; dec: {self.declarations}}} --end'
+        return f'{{value: {self.value}; type: {self.type}; dec: {self.declarations}; loaded: {self.loaded}}} --end'
 
 
 class RegisterHeap():
     def __init__(self):
         self.heap = []
-    
+
     # def load_registers(self):
-    #     for 
-    
+    #     for
+
     def get_new_register(self):
         self.heap.append(1)
         register = len(self.heap)
         return register
-    
+
+
 register_heap = RegisterHeap()
+
 
 class CymbolCheckerVisitor(CymbolVisitor):
     variables_type = {}
@@ -118,6 +120,7 @@ class CymbolCheckerVisitor(CymbolVisitor):
         out = mem_alloc
         if ctx.expr() is not None:
             expr = self.visit(ctx.expr())
+            out += expr.declarations
             out += f'store {expr.type} {expr.value}, {tyype}* %{name}, align 4\n'
         return out
 
@@ -135,25 +138,25 @@ class CymbolCheckerVisitor(CymbolVisitor):
     def visitIntExpr(self, ctx: CymbolParser.IntExprContext):
         tyype = TypeEnum.INT
         value = ctx.INT().getText()
-        return Expr(tyype, value)
+        return Expr(tyype, value, loaded=True)
 
     def visitFloatExpr(self, ctx: CymbolParser.FloatExprContext):
         # TODO probably we will have to transform text to hexadecimal
         tyype = TypeEnum.FLOAT
         value = ctx.INT().getText()
-        return Expr(tyype, value)
+        return Expr(tyype, value, loaded=True)
 
     def visitBooleanExpr(self, ctx: CymbolParser.BooleanExprContext):
         # TODO check if it is using it right. I think it uses i32 (like int) instead
         tyype = TypeEnum.BOOLEAN
         value = 1 if ctx.getText() == 'true' else 0
 
-        return Expr(tyype, value)
+        return Expr(tyype, value, loaded=True)
 
     def visitIDExpr(self, ctx: CymbolParser.IDExprContext):
         name = ctx.ID().getText()
         tyype = self.variables_type[name]
-        
+
         return Expr(tyype, f'%{name}')
 
     def visitAddSubExpr(self, ctx: CymbolParser.AddSubExprContext):
@@ -161,19 +164,20 @@ class CymbolCheckerVisitor(CymbolVisitor):
         expr_2 = self.visit(ctx.expr()[1])
 
         symbol = 'add nsw'
+        print(expr_1)
+        print(expr_2)
         if expr_1.type == expr_2.type:
             tyype = expr_1.type
-            
-            
+
             register_1 = expr_1.get_assigned_register()
             out = expr_1.declarations + '\n'
-            
+
             register_2 = expr_2.get_assigned_register()
             out += expr_2.declarations + '\n'
-            
+
             out_reg = register_heap.get_new_register()
             out += f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
-            expression = Expr(tyype, f'%{out_reg}', out)
-            expression.loaded = True
-            
+            expression = Expr(tyype, f'%{out_reg}',
+                              declarations=out, loaded=True)
+            print(expression)
             return expression
