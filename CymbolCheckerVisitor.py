@@ -20,16 +20,47 @@ class TypeEnum(Enum):
         return llvm_type
 
     def __str__(self):
-        return self.name + "   ->  " + self.llvm_type
+        return self.get_llvm_type()
 
 
 class Expr():
-	def __init__(self, tyype, value):
-		self.type = tyype
-		self.value = value
+    def __init__(self, tyype, value, declarations=""):
+        """
+        Initialize Expr Object
+        :param: tyype - type of the expr
+        :param: value - the value, can be number or register
+        :param: declarations - contains all the commands that you have to do before calling this expr
+        """
+        self.type = tyype
+        self.value = value
+        self.declarations = declarations
 
+    def load(self):
+        """
+        Used to load variable in a new register
+        """
+        dest_reg = register_heap.get_new_register()
+        self.declarations = f'%{dest_reg} = load {self.type}, {self.type}* {self.value}, align 4'
+        return dest_reg
+
+
+class RegisterHeap():
+    def __init__(self):
+        self.heap = []
+    
+    # def load_registers(self):
+    #     for 
+    
+    def get_new_register(self):
+        self.heap.append(1)
+        register = len(self.heap)
+        return register
+    
+register_heap = RegisterHeap()
 
 class CymbolCheckerVisitor(CymbolVisitor):
+    variables_type = {}
+
     def visitFiile(self, ctx: CymbolParser.FiileContext):
         output = ""
         if ctx.children:
@@ -53,11 +84,11 @@ class CymbolCheckerVisitor(CymbolVisitor):
             for stat in ctx.block().stat():
                 ret = self.visit(stat)
                 if ret is not None:
-               		returns.extend(ret.split('\n'))
+                    returns.extend(ret.split('\n'))
 
             for ret in returns:
                 block += f'  {ret}\n'
-		
+
         out = f'define {tyype} @{name}() #0 {{ \n'
         out += block
         out += "\n}\n"
@@ -65,42 +96,68 @@ class CymbolCheckerVisitor(CymbolVisitor):
         return out
 
     def visitVarDecl(self, ctx: CymbolParser.VarDeclContext):
-        tyype = TypeEnum(ctx.tyype().getText()).get_llvm_type()
+        tyype = TypeEnum(ctx.tyype().getText())
         name = ctx.ID().getText()
+
+        self.variables_type[name] = tyype
 
         mem_alloc = f'%{name} = alloca {tyype}, align 4\n'
         out = mem_alloc
         if ctx.expr() is not None:
             expr = self.visit(ctx.expr())
-            print(expr.type)
             out += f'store {expr.type} {expr.value}, {tyype}* %{name}, align 4\n'
         return out
 
     def visitReturnStat(self, ctx: CymbolParser.ReturnStatContext):
         expr = self.visit(ctx.expr())
 
-        out = "ret "
-        
         if expr:
-            out += f'{expr.type} {expr.value}'
+            out = expr.declarations + '\n'
+            out += f'ret {expr.type} {expr.value}'
+        else:
+            out = 'ret i32 0'
 
         print(out)
         return out
 
     def visitIntExpr(self, ctx: CymbolParser.IntExprContext):
-        tyype = TypeEnum.INT.get_llvm_type()
+        tyype = TypeEnum.INT
         value = ctx.INT().getText()
         return Expr(tyype, value)
 
     def visitFloatExpr(self, ctx: CymbolParser.FloatExprContext):
         # TODO probably we will have to transform text to hexadecimal
-        tyype = TypeEnum.FLOAT.get_llvm_type()
+        tyype = TypeEnum.FLOAT
         value = ctx.INT().getText()
         return Expr(tyype, value)
 
     def visitBooleanExpr(self, ctx: CymbolParser.BooleanExprContext):
         # TODO check if it is using it right. I think it uses i32 (like int) instead
-        tyype = TypeEnum.BOOLEAN.get_llvm_type()
+        tyype = TypeEnum.BOOLEAN
         value = 1 if ctx.getText() == 'true' else 0
 
         return Expr(tyype, value)
+
+    def visitIDExpr(self, ctx: CymbolParser.IDExprContext):
+        name = ctx.ID().getText()
+        tyype = self.variables_type[name]
+        
+        return Expr(tyype, f'%{name}')
+
+    def visitAddSubExpr(self, ctx: CymbolParser.AddSubExprContext):
+        expr_1 = self.visit(ctx.expr()[0])
+        expr_2 = self.visit(ctx.expr()[1])
+
+        symbol = 'add nsw'
+        if expr_1.type == expr_2.type:
+            tyype = expr_1.type
+            
+            register_1 = expr_1.load()
+            out = expr_1.declarations + '\n'
+
+            register_2 = expr_2.load()
+            out += expr_2.declarations + '\n'
+            
+            out_reg = register_heap.get_new_register()
+            out += f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}'
+            return Expr(tyype, f'%{out_reg}', out)
