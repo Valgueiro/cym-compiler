@@ -34,14 +34,27 @@ class Expr():
         self.type = tyype
         self.value = value
         self.declarations = declarations
+        self.loaded = False
 
     def load(self):
         """
         Used to load variable in a new register
         """
         dest_reg = register_heap.get_new_register()
-        self.declarations = f'%{dest_reg} = load {self.type}, {self.type}* {self.value}, align 4'
-        return dest_reg
+        self.declarations += f'%{dest_reg} = load {self.type}, {self.type}* {self.value}, align 4\n'
+        return f'%{dest_reg}'
+
+    def get_assigned_register(self):
+        """
+        Get the register assigned with expr (or load one if not already assigned)
+        """
+        if self.loaded:
+            return self.value
+    
+        return self.load()
+    
+    def __str__(self):
+        return f'{{value: {self.value}; type: {self.type}; dec: {self.declarations}}} --end'
 
 
 class RegisterHeap():
@@ -117,7 +130,6 @@ class CymbolCheckerVisitor(CymbolVisitor):
         else:
             out = 'ret i32 0'
 
-        print(out)
         return out
 
     def visitIntExpr(self, ctx: CymbolParser.IntExprContext):
@@ -152,12 +164,16 @@ class CymbolCheckerVisitor(CymbolVisitor):
         if expr_1.type == expr_2.type:
             tyype = expr_1.type
             
-            register_1 = expr_1.load()
+            
+            register_1 = expr_1.get_assigned_register()
             out = expr_1.declarations + '\n'
-
-            register_2 = expr_2.load()
+            
+            register_2 = expr_2.get_assigned_register()
             out += expr_2.declarations + '\n'
             
             out_reg = register_heap.get_new_register()
-            out += f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}'
-            return Expr(tyype, f'%{out_reg}', out)
+            out += f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
+            expression = Expr(tyype, f'%{out_reg}', out)
+            expression.loaded = True
+            
+            return expression
