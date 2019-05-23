@@ -18,4 +18,8 @@ Modifique os arquivos grammars/Cymbol.g4 e CymbolCheckerVisitor.py
 `python tests/run.py <test>` : Rodar apenas um teste especifico presente na pasta tests/inputs <br>
 
 
+## Rodar com docker:
+`docker build -t antlr-machine .` : Build <br>
+```docker run -it -v `pwd`:/tmp/compiler antlr-machine:latest /bin/bash``` : Start bash
+
 obs2: [ctrl]+[d] insere EOF (end of file) no terminal
