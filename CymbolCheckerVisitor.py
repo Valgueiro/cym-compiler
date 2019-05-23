@@ -164,8 +164,6 @@ class CymbolCheckerVisitor(CymbolVisitor):
         expr_2 = self.visit(ctx.expr()[1])
 
         symbol = 'add nsw'
-        print(expr_1)
-        print(expr_2)
         if expr_1.type == expr_2.type:
             tyype = expr_1.type
 
@@ -179,5 +177,5 @@ class CymbolCheckerVisitor(CymbolVisitor):
             out += f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
             expression = Expr(tyype, f'%{out_reg}',
                               declarations=out, loaded=True)
-            print(expression)
+                              
             return expression
