@@ -71,6 +71,7 @@ class RegisterHeap():
 
 
 register_heap = RegisterHeap()
+function_heaps = {}
 
 
 class CymbolCheckerVisitor(CymbolVisitor):
@@ -91,8 +92,9 @@ class CymbolCheckerVisitor(CymbolVisitor):
     def visitFuncDecl(self, ctx: CymbolParser.FuncDeclContext):
         tyype = TypeEnum(ctx.tyype().getText()).get_llvm_type()
         name = ctx.ID().getText()
-
+        function_heaps[name] = RegisterHeap()
         block = ""
+        paramtypelist = ""
         returns = []
 
         if ctx.block().stat():
@@ -102,9 +104,17 @@ class CymbolCheckerVisitor(CymbolVisitor):
                     returns.extend(ret.split('\n'))
 
             for ret in returns:
-                block += f'  {ret}\n'
+                block += f' {ret}\n'
 
-        out = f'define {tyype} @{name}() #0 {{ \n'
+        if ctx.paramTypeList():
+            paramlist = ctx.paramTypeList().paramType()
+            paramtypelist = self.visit(paramlist[0])
+            for paramtype in paramlist[1:]:
+                ret = self.visit(paramtype)
+                if ret is not None:
+                    paramtypelist += f', {ret}'
+
+        out = f'define {tyype} @{name}({paramtypelist}) #0 {{ \n'
         out += block
         out += "\n}\n"
 
@@ -122,6 +132,22 @@ class CymbolCheckerVisitor(CymbolVisitor):
             expr = self.visit(ctx.expr())
             out += expr.declarations
             out += f'store {expr.type} {expr.value}, {tyype}* %{name}, align 4\n'
+        return out
+
+    def visitParamType(self, ctx: CymbolParser.ParamTypeContext):
+        tyype = TypeEnum(ctx.tyype().getText())
+        name = ctx.ID().getText()
+        self.variables_type[name] = tyype
+        #falta alocar parametros na heap das funcoes
+
+        return f'{tyype}'
+
+    def visitAssignStat(self, ctx: CymbolParser.AssignStatContext):
+        name = ctx.ID().getText()
+        tyype = self.variables_type[name]
+        expr = self.visit(ctx.expr())
+        out = expr.declarations
+        out += f'store {expr.type} {expr.value}, {tyype}* %{name}, align 4\n'
         return out
 
     def visitReturnStat(self, ctx: CymbolParser.ReturnStatContext):
