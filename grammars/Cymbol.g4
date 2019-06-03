@@ -89,7 +89,7 @@ ifStat : 'if' '(' expr ')' ifElseExprStat
 elseStat : 'else' ifElseExprStat
          ;
 
-exprStat : expr ';'
+exprStat : expr ';' 
          ;
 
 exprList : expr (',' expr)* 
@@ -107,7 +107,7 @@ expr : ID '(' exprList? ')'                      #FuncCallExpr
      | '!' expr                                  #NotExpr
      | expr op=('<' | '>' | '<=' | '>=') expr    #CompExpr
      | expr op=('*' | '/') expr                  #MultDivExpr
-     | expr op=('+' | '-') expr                  #SumSubExpr
+     | expr op=('+' | '-') expr                  #AddSubExpr
      | expr op=('&&'|'||') expr                  #AndOrExpr
      | expr op=('=='|'!=') expr                  #EqualNotEqualExpr
      | ID                                        #IDExpr
