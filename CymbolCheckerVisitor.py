@@ -24,7 +24,7 @@ class TypeEnum(Enum):
 
 
 class Expr():
-    def __init__(self, tyype, value, loaded=False, declarations="", nmfnc = "main"):
+    def __init__(self, tyype, value, loaded=False, declarations="", nmfnc = "global"):
         """
         Initialize Expr Object
         :param: tyype - type of the expr
@@ -77,8 +77,9 @@ function_heaps = {}
 
 class CymbolCheckerVisitor(CymbolVisitor):
     variables_type = {}
-    param_regs = {}
-    namefunc = ""
+    variables_type["global"] = {} 
+    namefunc = "global"
+    function_heaps["global"] = RegisterHeap()
     def visitFiile(self, ctx: CymbolParser.FiileContext):
         output = ""
         if ctx.children:
@@ -94,34 +95,34 @@ class CymbolCheckerVisitor(CymbolVisitor):
     def visitFuncDecl(self, ctx: CymbolParser.FuncDeclContext):
         tyype = TypeEnum(ctx.tyype().getText()).get_llvm_type()
         name = ctx.ID().getText()
+        self.variables_type["global"][name]=tyype
         self.namefunc=name
         function_heaps[name] = RegisterHeap()
+        self.variables_type[self.namefunc]={}
         block = ""
         paramtypelist = ""
         paramnamelist=[]
         returns = []
+        firstparam=1
         if ctx.paramTypeList():
             paramlist = ctx.paramTypeList().paramType()
-            (rettyype, retname) = self.visit(paramlist[0]) #faz para o primeiro parametro (so por causa de uma virgula)
-            paramtypelist += f'{rettyype}'
-            paramnamelist.append(retname)
-
-            for paramtype in paramlist[1:]: #faz para o resto
+            for paramtype in paramlist: #faz para o resto
                 (rettyype, retname) = self.visit(paramtype)
                 if rettyype is not None:
-                    paramtypelist += f', {rettyype}'
+                    if firstparam:
+                        firstparam = 0
+                        paramtypelist += f'{rettyype}'
+                    else:
+                        paramtypelist += f', {rettyype}'
                 if retname is not None:
                     paramnamelist.append(retname)
             for paramname in paramnamelist:
-                reg = function_heaps[self.namefunc].get_new_register()
-                block += f'%{reg} = alloca {self.variables_type[paramname]}, align 4\n'
+                block += f'%{paramname} = alloca {self.variables_type[self.namefunc][paramname]}, align 4\n'
             n = len(paramnamelist)
             for i in range (n):
                 iname=paramnamelist[i]
-                itp = self.variables_type[iname]
-                ireg = i+n+1
-                block += f'store {itp} %{i}, {itp}* %{ireg}, align 4\n'
-                self.param_regs[iname] = ireg
+                itp = self.variables_type[self.namefunc][iname]
+                block += f'store {itp} %{i}, {itp}* %{iname}, align 4\n'
         if ctx.block().stat():
             for stat in ctx.block().stat():
                 ret = self.visit(stat)
@@ -130,42 +131,50 @@ class CymbolCheckerVisitor(CymbolVisitor):
 
             for ret in returns:
                 block += f' {ret}\n'
-
         out = f'define {tyype} @{name}({paramtypelist}) #0 {{ \n'
         out += block
         out += "\n}\n"
+        self.namefunc="global"
 
         return out
 
     def visitVarDecl(self, ctx: CymbolParser.VarDeclContext):
         tyype = TypeEnum(ctx.tyype().getText())
         name = ctx.ID().getText()
-
-        self.variables_type[name] = tyype
-
-        mem_alloc = f'%{name} = alloca {tyype}, align 4\n'
-        out = mem_alloc
-        if ctx.expr() is not None:
-            expr = self.visit(ctx.expr())
-            out += expr.declarations
-            out += f'store {expr.type} {expr.value}, {tyype}* %{name}, align 4\n'
+        self.variables_type[self.namefunc][name] = tyype
+        if self.namefunc == "global":
+            if ctx.expr() is not None:
+                expr = self.visit(ctx.expr())
+                out = expr.declarations
+                out += f'@{name} = global {tyype} {expr.value}, align 4\n'
+            else:
+                out = f'@{name} = common global {tyype} 0, align 4\n' 
+            
+        else:    
+            mem_alloc = f'%{name} = alloca {tyype}, align 4\n'
+            out = mem_alloc
+            if ctx.expr() is not None:
+                expr = self.visit(ctx.expr())
+                out += expr.declarations
+                out += f'store {expr.type} {expr.value}, {tyype}* %{name}, align 4\n'
         return out
 
     def visitParamType(self, ctx: CymbolParser.ParamTypeContext):
         tyype = TypeEnum(ctx.tyype().getText())
         name = ctx.ID().getText()
-        self.variables_type[name] = tyype
+        self.variables_type[self.namefunc][name] = tyype
         n = function_heaps[self.namefunc].get_new_register()
 
         return (f'{tyype}', name)
 
     def visitAssignStat(self, ctx: CymbolParser.AssignStatContext):
         name = ctx.ID().getText()
-        tyype = self.variables_type[name]
+        if name in self.variables_type[self.namefunc]:
+            tyype = self.variables_type[self.namefunc][name]
+        else:
+            tyype = self.variables_type["global"][name]
         expr = self.visit(ctx.expr())
         out  = expr.declarations
-        if name in self.param_regs:
-            name = self.param_regs[name]
         out += f'store {expr.type} {expr.value}, {tyype}* %{name}, align 4\n'
         return out
 
@@ -200,14 +209,47 @@ class CymbolCheckerVisitor(CymbolVisitor):
 
     def visitIDExpr(self, ctx: CymbolParser.IDExprContext):
         name = ctx.ID().getText()
-        tyype = self.variables_type[name]
-        if name in self.param_regs:
-            return Expr(tyype, f'%{self.param_regs[name]}', nmfnc=self.namefunc)
-        return Expr(tyype, f'%{name}', nmfnc=self.namefunc)
+        if name in self.variables_type[self.namefunc]:
+            tyype = self.variables_type[self.namefunc][name]
+            return Expr(tyype, f'%{name}', nmfnc=self.namefunc)
+        else:
+            tyype = self.variables_type["global"][name]
+            return Expr(tyype, f'@{name}', nmfnc=self.namefunc)
+
+    def visitFuncCallExpr(self, ctx: CymbolParser.FuncCallExprContext):
+        name = ctx.ID().getText()
+        tyype = self.variables_type["global"][name]
+        out = ""
+        paramout = ""
+        firstparam = 1
+        if ctx.exprList():
+            exprlist = ctx.exprList().expr()
+            for exprn in exprlist:
+                expr = self.visit(exprn)
+                reg=expr.get_assigned_register()
+                if expr.declarations != "":
+                    out += expr.declarations + '\n'
+                if firstparam:
+                    paramout += f'{expr.type} {reg}'
+                    firstparam=0
+                else:
+                    paramout += f', {expr.type} {reg}'
+        out_reg = function_heaps[self.namefunc].get_new_register()
+        out += f'%{out_reg} = call {tyype} @{name}({paramout})\n'
+        expression = Expr(tyype, f'%{out_reg}', declarations=out, loaded= True, nmfnc = self.namefunc)
+        return expression
+
+    def visitExprStat(self, ctx: CymbolParser.exprStat):
+        expr = self.visit(ctx.expr())
+        out = expr.declarations
+        if "call" in out:
+            return out
+        return ""
 
     def visitAddSubExpr(self, ctx: CymbolParser.AddSubExprContext):
         expr_1 = self.visit(ctx.expr()[0])
         expr_2 = self.visit(ctx.expr()[1])
+        out = ""
 
         if ctx.op.text == '+':
             symbol = 'add nsw'
@@ -218,11 +260,50 @@ class CymbolCheckerVisitor(CymbolVisitor):
 
             register_1 = expr_1.get_assigned_register()
             if expr_1.declarations != "":
-                out = expr_1.declarations + '\n'
+                out += expr_1.declarations + '\n'
 
             register_2 = expr_2.get_assigned_register()
             if expr_2.declarations != "":
-                out = expr_2.declarations + '\n'
+                out += (expr_2.declarations + '\n')
+
+            out_reg = function_heaps[self.namefunc].get_new_register()
+            out += f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
+            expression = Expr(tyype, f'%{out_reg}',
+                              declarations=out, loaded=True)
+                              
+            return expression
+
+    def visitMulDivSubExpr(self, ctx: CymbolParser.MulDivExprContext):
+        
+        expr_1 = self.visit(ctx.expr()[0])
+        expr_2 = self.visit(ctx.expr()[1])
+        tyype = TypeEnum.INT
+        out = ""
+        register_1 = expr_1.get_assigned_register()
+        if expr_1.declarations != "":
+            out += expr_1.declarations + '\n'
+
+        register_2 = expr_2.get_assigned_register()
+        if expr_2.declarations != "":
+            out += (expr_2.declarations + '\n')
+        #conversao de tipos
+        if expr_1.tyype == TypeEnum.FLOAT:
+            tyype = TypeEnum.FLOAT
+            if expr_2.type == TypeEnum.INT:
+                reg_aux = self.function_heaps[self.namefunc].get_new_register
+                out += f'%{reg_aux} = sitofp i32 {register_2} to float'
+                register_2 = f'%{reg_aux}'
+        elif expr_2.tyype == TypeEnum.FLOAT:
+            tyype = TypeEnum.FLOAT
+            if expr_1.type == TypeEnum.INT:
+                reg_aux = self.function_heaps[self.namefunc].get_new_register
+                out += f'%{reg_aux} = sitofp i32 {register_1} to float'
+                register_1 = f'%{reg_aux}'                
+        #fazer aqui
+        if ctx.op.text == '*':
+                symbol = 'fmul'
+        else:
+            symbol = 'div'
 
             out_reg = function_heaps[self.namefunc].get_new_register()
             out += f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
