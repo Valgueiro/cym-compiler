@@ -16,7 +16,7 @@ class TypeEnum(Enum):
         elif self.value == self.FLOAT.value:
             llvm_type = "float"
         elif self.value == self.BOOLEAN.value:
-            llvm_type = "i8"
+            llvm_type = "i1"
         return llvm_type
 
     def __str__(self):
@@ -296,3 +296,33 @@ class CymbolCheckerVisitor(CymbolVisitor):
             out_reg = function_heaps[self.namefunc].get_new_register()
             out = f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}'
             return Expr(tyype, f'%{out_reg}', declarations=out, loaded= True, nmfnc=self.namefunc)
+
+
+    def visitCompExpr(self, ctx: CymbolParser.CompExprContext):
+        expr_1 = self.visit(ctx.expr()[0])
+        expr_2 = self.visit(ctx.expr()[1])
+        
+        symbol = 'icmp '
+        if ctx.op.text == '<':
+            symbol += 'slt'
+        elif ctx.op.text == '<=':
+            symbol += 'sle'
+        elif ctx.op.text == '>':
+            symbol += 'sgt'
+        elif ctx.op.text == '>=':
+            symbol += 'sge'
+
+        if expr_1.type == expr_2.type:
+            tyype = expr_1.type
+
+            register_1 = expr_1.get_assigned_register()
+            if expr_1.declarations != "":
+                out += expr_1.declarations + '\n'
+
+            register_2 = expr_2.get_assigned_register()
+            if expr_2.declarations != "":
+                out += (expr_2.declarations + '\n')
+            
+            out_reg = function_heaps[self.namefunc].get_new_register()
+            out = f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}'
+            return Expr(TypeEnum.BOOLEAN, f'%{out_reg}', declarations=out, loaded= True, nmfnc=self.namefunc)
