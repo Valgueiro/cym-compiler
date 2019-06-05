@@ -294,7 +294,7 @@ class CymbolCheckerVisitor(CymbolVisitor):
                 out += (expr_2.declarations + '\n')
             
             out_reg = function_heaps[self.namefunc].get_new_register()
-            out = f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}'
+            out = f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
             return Expr(tyype, f'%{out_reg}', declarations=out, loaded= True, nmfnc=self.namefunc)
 
 
@@ -324,7 +324,7 @@ class CymbolCheckerVisitor(CymbolVisitor):
                 out += (expr_2.declarations + '\n')
             
             out_reg = function_heaps[self.namefunc].get_new_register()
-            out = f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}'
+            out = f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
             return Expr(TypeEnum.BOOLEAN, f'%{out_reg}', declarations=out, loaded= True, nmfnc=self.namefunc)
     
     def visitEqualNotEqualExpr(self, ctx: CymbolParser.EqualNotEqualExprContext):
@@ -349,5 +349,19 @@ class CymbolCheckerVisitor(CymbolVisitor):
                 out += (expr_2.declarations + '\n')
             
             out_reg = function_heaps[self.namefunc].get_new_register()
-            out = f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}'
+            out = f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
             return Expr(TypeEnum.BOOLEAN, f'%{out_reg}', declarations=out, loaded= True, nmfnc=self.namefunc)
+    
+    def visitNotExpr(self, ctx: CymbolParser.NotExprContext):
+        expr = self.visit(ctx.expr())
+        
+        tyype = expr.type
+        out = ""
+
+        register = expr.get_assigned_register()
+        if expr.declarations != "":
+            out += expr.declarations + '\n'
+
+        out_reg = function_heaps[self.namefunc].get_new_register()
+        out = f'%{out_reg} = icmp ne {tyype} {register}, 0\n'
+        return Expr(TypeEnum.BOOLEAN, f'%{out_reg}', declarations=out, loaded= True, nmfnc=self.namefunc)
