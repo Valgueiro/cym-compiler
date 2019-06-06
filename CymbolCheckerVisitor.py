@@ -175,6 +175,16 @@ class CymbolCheckerVisitor(CymbolVisitor):
             tyype = self.variables_type["global"][name]
         expr = self.visit(ctx.expr())
         out  = expr.declarations
+        if tyype == TypeEnum.INT and expr.type == TypeEnum.FLOAT:
+            reg_aux = function_heaps[self.namefunc].get_new_register()
+            out += f'%{reg_aux} = fptosi float {expr.value} to i32\n'
+            expr.value = f'%{reg_aux}'
+            expr.type = TypeEnum.INT
+        elif tyype == TypeEnum.FLOAT and expr.type == TypeEnum.INT:
+            reg_aux = function_heaps[self.namefunc].get_new_register()
+            out += f'%{reg_aux} = sitofp i32 {expr.value} to float\n'
+            expr.value = f'%{reg_aux}'
+            expr.type = TypeEnum.INT
         out += f'store {expr.type} {expr.value}, {tyype}* %{name}, align 4\n'
         return out
 
@@ -197,7 +207,7 @@ class CymbolCheckerVisitor(CymbolVisitor):
     def visitFloatExpr(self, ctx: CymbolParser.FloatExprContext):
         # TODO probably we will have to transform text to hexadecimal
         tyype = TypeEnum.FLOAT
-        value = ctx.INT().getText()
+        value = ctx.FLOAT().getText()
         return Expr(tyype, value, loaded=True)
 
     def visitBooleanExpr(self, ctx: CymbolParser.BooleanExprContext):
@@ -249,32 +259,47 @@ class CymbolCheckerVisitor(CymbolVisitor):
     def visitAddSubExpr(self, ctx: CymbolParser.AddSubExprContext):
         expr_1 = self.visit(ctx.expr()[0])
         expr_2 = self.visit(ctx.expr()[1])
+        tyype = TypeEnum.INT
         out = ""
+        register_1 = expr_1.get_assigned_register()
+        if expr_1.declarations != "":
+            out += expr_1.declarations + '\n'
 
-        if ctx.op.text == '+':
-            symbol = 'add nsw'
-        else:
-            symbol = 'sub nsw'
-        if expr_1.type == expr_2.type:
-            tyype = expr_1.type
-
-            register_1 = expr_1.get_assigned_register()
-            if expr_1.declarations != "":
-                out += expr_1.declarations + '\n'
-
-            register_2 = expr_2.get_assigned_register()
-            if expr_2.declarations != "":
-                out += (expr_2.declarations + '\n')
-
-            out_reg = function_heaps[self.namefunc].get_new_register()
-            out += f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
-            expression = Expr(tyype, f'%{out_reg}',
-                              declarations=out, loaded=True)
-                              
-            return expression
-
-    def visitMulDivSubExpr(self, ctx: CymbolParser.MulDivExprContext):
+        register_2 = expr_2.get_assigned_register()
+        if expr_2.declarations != "":
+            out += (expr_2.declarations + '\n')
+        #conversao de tipos
+        if expr_1.type == TypeEnum.FLOAT:
+            tyype = TypeEnum.FLOAT
+            if expr_2.type == TypeEnum.INT:
+                reg_aux = function_heaps[self.namefunc].get_new_register()
+                out += f'%{reg_aux} = sitofp i32 {register_2} to float\n'
+                register_2 = f'%{reg_aux}'
+        elif expr_2.type == TypeEnum.FLOAT:
+            tyype = TypeEnum.FLOAT
+            if expr_1.type == TypeEnum.INT:
+                reg_aux = function_heaps[self.namefunc].get_new_register()
+                out += f'%{reg_aux} = sitofp i32 {register_1} to float\n'
+                register_1 = f'%{reg_aux}'                
         
+        if ctx.op.text == '+':
+            if tyype == TypeEnum.FLOAT:
+                symbol = 'fadd' 
+            else:
+                symbol = 'add'
+        else:
+            if tyype == TypeEnum.FLOAT:
+                symbol = 'fsub' 
+            else:
+                symbol = 'sub'
+        out_reg = function_heaps[self.namefunc].get_new_register()
+        out += f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
+        expression = Expr(tyype, f'%{out_reg}',
+                            declarations=out, loaded=True)
+                            
+        return expression
+
+    def visitMultDivExpr(self, ctx: CymbolParser.MultDivExprContext):
         expr_1 = self.visit(ctx.expr()[0])
         expr_2 = self.visit(ctx.expr()[1])
         tyype = TypeEnum.INT
@@ -287,27 +312,32 @@ class CymbolCheckerVisitor(CymbolVisitor):
         if expr_2.declarations != "":
             out += (expr_2.declarations + '\n')
         #conversao de tipos
-        if expr_1.tyype == TypeEnum.FLOAT:
+        if expr_1.type == TypeEnum.FLOAT:
             tyype = TypeEnum.FLOAT
             if expr_2.type == TypeEnum.INT:
-                reg_aux = self.function_heaps[self.namefunc].get_new_register
-                out += f'%{reg_aux} = sitofp i32 {register_2} to float'
+                reg_aux = function_heaps[self.namefunc].get_new_register()
+                out += f'%{reg_aux} = sitofp i32 {register_2} to float\n'
                 register_2 = f'%{reg_aux}'
-        elif expr_2.tyype == TypeEnum.FLOAT:
+        elif expr_2.type == TypeEnum.FLOAT:
             tyype = TypeEnum.FLOAT
             if expr_1.type == TypeEnum.INT:
-                reg_aux = self.function_heaps[self.namefunc].get_new_register
-                out += f'%{reg_aux} = sitofp i32 {register_1} to float'
+                reg_aux = function_heaps[self.namefunc].get_new_register()
+                out += f'%{reg_aux} = sitofp i32 {register_1} to float\n'
                 register_1 = f'%{reg_aux}'                
-        #fazer aqui
+        
         if ctx.op.text == '*':
-                symbol = 'fmul'
+            if tyype == TypeEnum.FLOAT:
+                symbol = 'fmul' 
+            else:
+                symbol = 'mul'
         else:
-            symbol = 'div'
-
-            out_reg = function_heaps[self.namefunc].get_new_register()
-            out += f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
-            expression = Expr(tyype, f'%{out_reg}',
-                              declarations=out, loaded=True)
-                              
-            return expression
+            if tyype == TypeEnum.FLOAT:
+                symbol = 'fdiv' 
+            else:
+                symbol = 'sdiv'
+        out_reg = function_heaps[self.namefunc].get_new_register()
+        out += f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
+        expression = Expr(tyype, f'%{out_reg}',
+                            declarations=out, loaded=True)
+                            
+        return expression
