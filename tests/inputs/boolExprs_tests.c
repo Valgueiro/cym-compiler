@@ -12,17 +12,18 @@ boolean andOrExpr(){
     return res; 
 }
 
-// boolean CompExpr(){
-//     int a = 5;
-//     float b = 5.00;
-//     boolean res = a > b;
-
-//     res = a > 3;
-//     res = b < 5.43;
-//     res = a <= 3 && b >= 5.43;
+boolean CompExpr(){
+    int a = 5;
+    float b = 5.00;
+    boolean res = a > b;
+    res = a > 3 && a < 3.32 && a >= 5 || a <= 17;
+    res = b < 5.43 && b > 3.48 && 2 <= b && b >= 24;
+    res = a <= 3 && b >= 5.43 && !(b == 5);
+    res = a != 3.23 && a != b;
+    res = res && (3 == 4 && 4 != 4.45);
     
-//     return res; 
-// }
+    return !res; 
+}
 
 boolean notExpr(){
     boolean a = true;
@@ -37,6 +38,6 @@ boolean notExpr(){
 
 int main(){
     boolean x = andOrExpr();
-
+    x = CompExpr();
     return 0;
 }

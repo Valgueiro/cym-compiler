@@ -26,7 +26,7 @@ def serializedATN():
         buf.write("\22\3\22\3\22\3\22\3\22\3\22\3\22\3\22\7\22\u00aa\n\22")
         buf.write("\f\22\16\22\u00ad\13\22\3\22\2\3\"\23\2\4\6\b\n\f\16\20")
         buf.write("\22\24\26\30\32\34\36 \"\2\b\3\2\3\5\3\2\31\32\3\2\23")
-        buf.write("\26\3\2\27\30\3\2\33\34\3\2\20\21\2\u00bc\2&\3\2\2\2\4")
+        buf.write("\26\3\2\27\30\3\2\20\21\3\2\33\34\2\u00bc\2&\3\2\2\2\4")
         buf.write("-\3\2\2\2\6\65\3\2\2\2\b\67\3\2\2\2\n@\3\2\2\2\fH\3\2")
         buf.write("\2\2\16K\3\2\2\2\20T\3\2\2\2\22Y\3\2\2\2\24_\3\2\2\2\26")
         buf.write("h\3\2\2\2\30j\3\2\2\2\32p\3\2\2\2\34s\3\2\2\2\36v\3\2")
@@ -1620,7 +1620,7 @@ class CymbolParser ( Parser ):
                         pass
 
                     elif la_ == 4:
-                        localctx = CymbolParser.AndOrExprContext(self, CymbolParser.ExprContext(self, _parentctx, _parentState))
+                        localctx = CymbolParser.EqualNotEqualExprContext(self, CymbolParser.ExprContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 161
                         if not self.precpred(self._ctx, 7):
@@ -1629,7 +1629,7 @@ class CymbolParser ( Parser ):
                         self.state = 162
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
-                        if not(_la==CymbolParser.AND or _la==CymbolParser.OR):
+                        if not(_la==CymbolParser.EQ or _la==CymbolParser.NE):
                             localctx.op = self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -1639,7 +1639,7 @@ class CymbolParser ( Parser ):
                         pass
 
                     elif la_ == 5:
-                        localctx = CymbolParser.EqualNotEqualExprContext(self, CymbolParser.ExprContext(self, _parentctx, _parentState))
+                        localctx = CymbolParser.AndOrExprContext(self, CymbolParser.ExprContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 164
                         if not self.precpred(self._ctx, 6):
@@ -1648,7 +1648,7 @@ class CymbolParser ( Parser ):
                         self.state = 165
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
-                        if not(_la==CymbolParser.EQ or _la==CymbolParser.NE):
+                        if not(_la==CymbolParser.AND or _la==CymbolParser.OR):
                             localctx.op = self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
