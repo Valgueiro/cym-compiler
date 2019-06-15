@@ -8,7 +8,9 @@ RUN apk update \
 && apk add --no-cache --virtual=build-dependencies unzip \
 && apk add --no-cache curl \
 && apk add --no-cache make \
-&& apk add --no-cache openjdk8-jre
+&& apk add --no-cache openjdk8-jre \
+&& apk add --no-cache llvm-dev \
+&& apk add --no-cache clang
 
 ### 3. Get Python, PIP
 RUN apk add --no-cache python3 \

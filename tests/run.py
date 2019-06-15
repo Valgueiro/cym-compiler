@@ -1,7 +1,7 @@
 import os
 import difflib
 import subprocess
-from colorama import Fore, Style  # pip install colorama
+from colorama import Fore, Style, init, deinit  # pip install colorama
 import difflib
 import sys
 
@@ -33,26 +33,52 @@ def check_diff(expected_path):
 
 def run_test(input_file, expected_file):
     try:
+        # Compile
         output = subprocess.check_output(
             ["make"], stdin=open(INPUTS_FOLDER + input_file)).decode()
 
-        check_diff(expected_file)
+        # Execute
+        
+        execute_messages = subprocess.check_output(["lli", "out.ll"]).decode()
+
+        print(Style.BRIGHT + Fore.CYAN + input_file + Fore.GREEN + "        OK")    
+        return True
+    except subprocess.CalledProcessError as e:
+        
+        print(Style.BRIGHT + Fore.CYAN + input_file + Fore.RED + "        ERROR!")
+
+        print(Fore.RED + "TEST ERROR!")
+        print(Fore.RED + str(e))
+
         out = output.split(START_COMMAND)[1].replace("None\n", "")
         if len(out) > 0:
             print(Fore.YELLOW + "Compilation Messages:")
-            print(out)
+            print(Fore.YELLOW + out)
 
-    except subprocess.CalledProcessError:
-        print(Fore.RED + "COMPILATION ERROR!")
-        print("Error on test: " + input_file)
+
+        return False
 
 
 def run_tests():
     print(Fore.WHITE + "-------------------- Initiating tests -------------------")
+    error_tests = []
     for input_file in os.listdir(INPUTS_FOLDER):
         expected_file = input_file.replace('.c', '') + ".ll"
-        run_test(input_file, expected_file)
+        sucessful = run_test(input_file, expected_file)
+        if not sucessful:
+            error_tests.append(input_file)
+        
+        print()
+        
+    print(Fore.WHITE + "-------------------- Finished tests -------------------")
 
+    if len(error_tests) > 0:
+        print(Fore.RED + Style.BRIGHT + "-------------------- WRONG TESTS -------------------")
+        for test in error_tests:
+            print(Fore.CYAN + test)
+    else:
+        print(Fore.GREEN + Style.BRIGHT + "No errors found!")
+    print()
 
 def main():
     if len(sys.argv) > 1:
@@ -62,6 +88,7 @@ def main():
     else:
         run_tests()
 
-
 if __name__ == "__main__":
+    init(autoreset=True)
     main()
+    deinit()
