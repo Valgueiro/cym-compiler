@@ -66,24 +66,13 @@ int multipleArgsTest(int argTest1, int argTest2,int argTest3, int argTest4){
 	return varMultipleArgsTest;
 }
 
-int ifTest(){
-	boolean varIfTest = true;
-	if(true){
-		if(varIfTest){
-			varIfTest = false;
-		} else if(! varIfTest == false){
-			varIfTest = true;
-		}
-	} else{
-		varIfTest = varIfTest;
-	}
-	return 0;
-}
-
 int callTest(){
 	int varCallTest = returnInt();
 	float varCallTest2 = returnFloat();
-	varCallTest = ifTest();
 	varCallTest = multipleArgsTest(1,2,3,4);
 	return 0;
+}
+
+int main(){
+	callTest();
 }

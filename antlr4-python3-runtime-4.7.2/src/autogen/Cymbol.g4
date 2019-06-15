@@ -89,7 +89,7 @@ ifStat : 'if' '(' expr ')' ifElseExprStat
 elseStat : 'else' ifElseExprStat
          ;
 
-exprStat : expr ';'
+exprStat : expr ';' 
          ;
 
 exprList : expr (',' expr)* 

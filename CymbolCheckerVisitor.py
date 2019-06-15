@@ -143,6 +143,11 @@ class CymbolCheckerVisitor(CymbolVisitor):
 
             for ret in returns:
                 block += f' {ret}\n'
+
+            
+        if block.find("ret ") == -1:
+            block += "ret i32 0;\n"
+
         out = f'define {tyype} @{name}({paramtypelist}) #0 {{ \n'
         out += block
         out += "\n}\n"
@@ -206,14 +211,11 @@ class CymbolCheckerVisitor(CymbolVisitor):
         tyype = self.variables_type["global"][self.namefunc]
         out =""
         if expr:
-
             reg = expr.get_assigned_register()
             if expr.declarations != "":
                 out += expr.declarations + '\n'
             (reg, expr, out) = self.convertIntFloat(reg, tyype, expr, out)            
             out += f'ret {expr.type} {reg}'
-        else:
-            out = f'ret {tyype} 0'
 
         return out
 
