@@ -12,17 +12,18 @@ boolean andOrExpr(){
     return res; 
 }
 
-// boolean CompExpr(){
-//     int a = 5;
-//     float b = 5.00;
-//     boolean res = a > b;
+boolean CompExpr(){
+    int a = 5;
+    float b = 5.00;
+    boolean res = a > b;
 
-//     res = a > 3;
-//     res = b < 5.43;
-//     res = a <= 3 && b >= 5.43;
+    res = a > 3;
+    res = b < 5.43;
+    res = a <= 3 && b >= 5.43 && !(b == 5);
+    res = a != 3.23 && a != b;
     
-//     return res; 
-// }
+    return res; 
+}
 
 boolean notExpr(){
     boolean a = true;

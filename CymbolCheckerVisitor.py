@@ -330,6 +330,11 @@ class CymbolCheckerVisitor(CymbolVisitor):
         out += f'%{out_reg} = icmp ne {tyype} {register}, 0\n'
         return Expr(TypeEnum.BOOLEAN, f'%{out_reg}', declarations=out, loaded= True, nmfnc=self.namefunc)
 
+    def visitParenExpr(self, ctx: CymbolParser.ParenExprContext):
+        out = self.visit(ctx.expr())
+        print(out)
+        return out
+
 
     def convertIntFloat(self, reg, tyype, expr, out):
         if tyype == TypeEnum.INT and expr.type == TypeEnum.FLOAT:
@@ -395,22 +400,40 @@ class CymbolCheckerVisitor(CymbolVisitor):
                 symbol = 'sdiv'
 
         elif ctx.op.text == '<':
-            symbol = 'icmp slt'
+            if tyype == TypeEnum.FLOAT:
+                symbol = 'fcmp olt' 
+            else:
+                symbol = 'icmp slt'
 
         elif ctx.op.text == '<=':
-            symbol = 'icmp sle'
+            if tyype == TypeEnum.FLOAT:
+                symbol = 'fcmp ole' 
+            else:
+                symbol = 'icmp sle'
 
         elif ctx.op.text == '>':
-            symbol = 'icmp sgt'
+            if tyype == TypeEnum.FLOAT:
+                symbol = 'fcmp ogt' 
+            else:
+                symbol = 'icmp sgt'
 
         elif ctx.op.text == '>=':
-            symbol = 'icmp sge'
+            if tyype == TypeEnum.FLOAT:
+                symbol = 'fcmp oge' 
+            else:
+                symbol = 'icmp sge'
 
         elif ctx.op.text == '==':
-            symbol = 'icmp eq'
+            if tyype == TypeEnum.FLOAT:
+                symbol = 'fcmp oeq' 
+            else:
+                symbol = 'icmp eq'
 
         elif ctx.op.text == '!=':
-            symbol = 'icmp ne'        
+            if tyype == TypeEnum.FLOAT:
+                symbol = 'fcmp one' 
+            else:
+                symbol = 'icmp ne'   
 
         out_reg = function_heaps[self.namefunc].get_new_register()
         out += f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'

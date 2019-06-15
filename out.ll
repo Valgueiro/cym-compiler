@@ -1,97 +1,210 @@
-define i32 @sum(i32, i32) #0 { 
-%a = alloca i32, align 4
-%b = alloca i32, align 4
-store i32 %0, i32* %a, align 4
-store i32 %1, i32* %b, align 4
- %x = alloca float, align 4
- %3 = load i32, i32* %a, align 4
+define i1 @andOrExpr() #0 { 
+ %a = alloca i1, align 4
+ store i1 1, i1* %a, align 4
  
- %4 = mul i32 %3, 5
+ %b = alloca i1, align 4
+ %1 = load i1, i1* %a, align 4
  
- %5 = sitofp i32 %4 to float
- store float %5, float* %x, align 4
+ %2 = and i1 0, %1
  
- %6 = add i32 10, 5
+ store i1 %2, i1* %b, align 4
  
- %7 = sitofp i32 %6 to float
- store float %7, float* %x, align 4
+ %res = alloca i1, align 4
+ %3 = and i1 1, 1
  
- %8 = load i32, i32* %a, align 4
+ store i1 %3, i1* %res, align 4
  
- %9 = load i32, i32* %b, align 4
+ %4 = load i1, i1* %a, align 4
  
- %10 = add i32 %8, %9
+ %5 = load i1, i1* %b, align 4
  
- ret i32 %10
-
-}
-define i1 @and(i1, i1, i1) #0 { 
-%a = alloca i1, align 4
-%b = alloca i1, align 4
-%c = alloca i1, align 4
-store i1 %0, i1* %a, align 4
-store i1 %1, i1* %b, align 4
-store i1 %2, i1* %c, align 4
- %6 = load i1, i1* %a, align 4
+ %6 = and i1 %4, %5
  
- %4 = load i1, i1* %b, align 4
+ store i1 %6, i1* %res, align 4
  
- %5 = icmp ne i1 %4, 0
+ %7 = load i1, i1* %a, align 4
  
- %7 = and i1 %6, %5
- 
- %8 = load i1, i1* %c, align 4
+ %8 = load i1, i1* %b, align 4
  
  %9 = or i1 %7, %8
  
- ret i1 %9
+ store i1 %9, i1* %res, align 4
+ 
+ %10 = load i1, i1* %a, align 4
+ 
+ %11 = and i1 1, %10
+ 
+ %12 = load i1, i1* %b, align 4
+ 
+ %13 = and i1 %11, %12
+ 
+ %14 = and i1 %13, 0
+ 
+ store i1 %14, i1* %res, align 4
+ 
+ %15 = load i1, i1* %a, align 4
+ 
+ %16 = or i1 1, %15
+ 
+ %17 = load i1, i1* %b, align 4
+ 
+ %18 = or i1 %16, %17
+ 
+ %19 = or i1 %18, 0
+ 
+ store i1 %19, i1* %res, align 4
+ 
+ %20 = load i1, i1* %a, align 4
+ 
+ %21 = or i1 1, %20
+ 
+ %22 = load i1, i1* %b, align 4
+ 
+ %23 = and i1 %21, %22
+ 
+ %24 = or i1 %23, 0
+ 
+ %25 = load i1, i1* %a, align 4
+ 
+ %26 = and i1 %24, %25
+ 
+ %27 = or i1 %26, 1
+ 
+ store i1 %27, i1* %res, align 4
+ 
+ %28 = load i1, i1* %res, align 4
+ 
+ ret i1 %28
 
 }
-define float @retFloat() #0 { 
- %1 = sub i32 3, 4
+define i1 @CompExpr() #0 { 
+ %a = alloca i32, align 4
+ store i32 5, i32* %a, align 4
  
- %2 = sitofp i32 %1 to float
- ret float %2
+ %b = alloca float, align 4
+ store float 0x40a0000000000000, float* %b, align 4
+ 
+ %res = alloca i1, align 4
+ %1 = load i32, i32* %a, align 4
+ 
+ %2 = load float, float* %b, align 4
+ 
+ %3 = sitofp i32 %1 to float
+ %4 = fcmp ogt float %3, %2
+ 
+ store i1 %4, i1* %res, align 4
+ 
+ %5 = load i32, i32* %a, align 4
+ 
+ %6 = icmp sgt i32 %5, 3
+ 
+ store i1 %6, i1* %res, align 4
+ 
+ %7 = load float, float* %b, align 4
+ 
+ %8 = fcmp olt float %7, 0x40adc28f00000000
+ 
+ store i1 %8, i1* %res, align 4
+ 
+ %9 = load i32, i32* %a, align 4
+ 
+ %10 = icmp sle i32 %9, 3
+ 
+ %11 = load float, float* %b, align 4
+ 
+ %12 = fcmp oge float %11, 0x40adc28f00000000
+ 
+ %13 = and i1 %10, %12
+ 
+ %14 = load float, float* %b, align 4
+ 
+ %15 = sitofp i32 5 to float
+ %16 = fcmp oeq float %14, %15
+ 
+ %17 = icmp ne i1 %16, 0
+ 
+ %18 = and i1 %13, %17
+ 
+ store i1 %18, i1* %res, align 4
+ 
+ %19 = load i32, i32* %a, align 4
+ 
+ %20 = sitofp i32 %19 to float
+ %21 = fcmp one float %20, 0x404eb85200000000
+ 
+ %22 = load i32, i32* %a, align 4
+ 
+ %23 = load float, float* %b, align 4
+ 
+ %24 = sitofp i32 %22 to float
+ %25 = fcmp one float %24, %23
+ 
+ %26 = and i1 %21, %25
+ 
+ store i1 %26, i1* %res, align 4
+ 
+ %27 = load i1, i1* %res, align 4
+ 
+ ret i1 %27
 
 }
-define i32 @retInt() #0 { 
- %1 = fsub float 0x4092e14800000000, 0x4126666600000000
+define i1 @notExpr() #0 { 
+ %a = alloca i1, align 4
+ store i1 1, i1* %a, align 4
  
- %2 = fptosi float %1 to i32
- ret i32 %2
+ %b = alloca i1, align 4
+ %1 = load i1, i1* %a, align 4
+ 
+ %2 = icmp ne i1 %1, 0
+ 
+ store i1 %2, i1* %b, align 4
+ 
+ %res = alloca i1, align 4
+ %3 = load i1, i1* %a, align 4
+ 
+ %4 = icmp ne i1 %3, 0
+ 
+ %5 = load i1, i1* %b, align 4
+ 
+ %6 = and i1 %4, %5
+ 
+ store i1 %6, i1* %res, align 4
+ 
+ %7 = load i1, i1* %b, align 4
+ 
+ %8 = load i1, i1* %a, align 4
+ 
+ %9 = or i1 %7, %8
+ 
+ %10 = load i1, i1* %b, align 4
+ 
+ %11 = icmp ne i1 %10, 0
+ 
+ %12 = and i1 %9, %11
+ 
+ store i1 %12, i1* %res, align 4
+ 
+ %13 = load i1, i1* %res, align 4
+ 
+ %14 = icmp ne i1 %13, 0
+ 
+ store i1 %14, i1* %res, align 4
+ 
+ %15 = load i1, i1* %res, align 4
+ 
+ ret i1 %15
 
 }
 define i32 @main() #0 { 
- %x = alloca i32, align 4
- %1 = call i32 @sum(i32 5, i32 3)
+ %x = alloca i1, align 4
+ %1 = call i1 @andOrExpr()
  
- store i32 %1, i32* %x, align 4
+ store i1 %1, i1* %x, align 4
  
- %w = alloca i32, align 4
- %2 = call float @retFloat()
+ %2 = call i1 @CompExpr()
  
- %3 = fptosi float %2 to i32
- store i32 %3, i32* %w, align 4
+ store i1 %2, i1* %x, align 4
  
- %y = alloca float, align 4
- %4 = call i32 @retInt()
- 
- %5 = sitofp i32 %4 to float
- store float %5, float* %y, align 4
- 
- %z = alloca i1, align 4
- %6 = call i1 @and(i1 1, i1 0, i1 1)
- 
- store i1 %6, i1* %z, align 4
- 
- %7 = call float @retFloat()
- 
- %8 = call i32 @retInt()
- 
- %9 = call i32 @sum(float %7, i32 %8)
- 
- store i32 %9, i32* %x, align 4
- 
-ret i32 0;
+ ret i32 0
 
 }

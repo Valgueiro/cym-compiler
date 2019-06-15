@@ -108,8 +108,8 @@ expr : ID '(' exprList? ')'                      #FuncCallExpr
      | expr op=('<' | '>' | '<=' | '>=') expr    #CompExpr
      | expr op=('*' | '/') expr                  #MultDivExpr
      | expr op=('+' | '-') expr                  #AddSubExpr
-     | expr op=('&&'|'||') expr                  #AndOrExpr
      | expr op=('=='|'!=') expr                  #EqualNotEqualExpr
+     | expr op=('&&'|'||') expr                  #AndOrExpr
      | ID                                        #IDExpr
      | INT                                       #IntExpr              
      | FLOAT                                     #FloatExpr
