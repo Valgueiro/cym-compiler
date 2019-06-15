@@ -194,3 +194,9 @@ define i32 @callTest() #0 {
  ret i32 0
 
 }
+define i32 @main() #0 { 
+ %1 = call i32 @callTest()
+ 
+ ret i32 0
+
+}

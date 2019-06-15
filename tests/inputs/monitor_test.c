@@ -87,3 +87,8 @@ int callTest(){
 	varCallTest = multipleArgsTest(1,2,3,4);
 	return 0;
 }
+
+int main(){
+	callTest();
+	return 0;
+}
