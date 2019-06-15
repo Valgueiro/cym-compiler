@@ -90,5 +90,4 @@ int callTest(){
 
 int main(){
 	callTest();
-	return 0;
 }

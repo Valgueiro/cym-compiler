@@ -2,7 +2,12 @@ float create(){
     return 3 - 4;
 }
 
+int letigo(){
+    return 4.59-10.4;
+}
+
+
 int main(){
     int x = create();
-    return 0;
+    float y = letigo();
 }
