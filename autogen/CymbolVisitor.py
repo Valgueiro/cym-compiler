@@ -99,11 +99,6 @@ class CymbolVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by CymbolParser#SumSubExpr.
-    def visitSumSubExpr(self, ctx:CymbolParser.SumSubExprContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by CymbolParser#FloatExpr.
     def visitFloatExpr(self, ctx:CymbolParser.FloatExprContext):
         return self.visitChildren(ctx)
@@ -141,6 +136,11 @@ class CymbolVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by CymbolParser#ParenExpr.
     def visitParenExpr(self, ctx:CymbolParser.ParenExprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by CymbolParser#AddSubExpr.
+    def visitAddSubExpr(self, ctx:CymbolParser.AddSubExprContext):
         return self.visitChildren(ctx)
 
 

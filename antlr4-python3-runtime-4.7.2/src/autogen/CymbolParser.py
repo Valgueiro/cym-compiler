@@ -1207,31 +1207,6 @@ class CymbolParser ( Parser ):
                 return visitor.visitChildren(self)
 
 
-    class SumSubExprContext(ExprContext):
-
-        def __init__(self, parser, ctx:ParserRuleContext): # actually a CymbolParser.ExprContext
-            super().__init__(parser)
-            self.op = None # Token
-            self.copyFrom(ctx)
-
-        def expr(self, i:int=None):
-            if i is None:
-                return self.getTypedRuleContexts(CymbolParser.ExprContext)
-            else:
-                return self.getTypedRuleContext(CymbolParser.ExprContext,i)
-
-        def PLUS(self):
-            return self.getToken(CymbolParser.PLUS, 0)
-        def MINUS(self):
-            return self.getToken(CymbolParser.MINUS, 0)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSumSubExpr" ):
-                return visitor.visitSumSubExpr(self)
-            else:
-                return visitor.visitChildren(self)
-
-
     class FloatExprContext(ExprContext):
 
         def __init__(self, parser, ctx:ParserRuleContext): # actually a CymbolParser.ExprContext
@@ -1401,6 +1376,31 @@ class CymbolParser ( Parser ):
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitParenExpr" ):
                 return visitor.visitParenExpr(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+    class AddSubExprContext(ExprContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a CymbolParser.ExprContext
+            super().__init__(parser)
+            self.op = None # Token
+            self.copyFrom(ctx)
+
+        def expr(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(CymbolParser.ExprContext)
+            else:
+                return self.getTypedRuleContext(CymbolParser.ExprContext,i)
+
+        def PLUS(self):
+            return self.getToken(CymbolParser.PLUS, 0)
+        def MINUS(self):
+            return self.getToken(CymbolParser.MINUS, 0)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitAddSubExpr" ):
+                return visitor.visitAddSubExpr(self)
             else:
                 return visitor.visitChildren(self)
 
@@ -1601,7 +1601,7 @@ class CymbolParser ( Parser ):
                         pass
 
                     elif la_ == 3:
-                        localctx = CymbolParser.SumSubExprContext(self, CymbolParser.ExprContext(self, _parentctx, _parentState))
+                        localctx = CymbolParser.AddSubExprContext(self, CymbolParser.ExprContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 158
                         if not self.precpred(self._ctx, 8):
