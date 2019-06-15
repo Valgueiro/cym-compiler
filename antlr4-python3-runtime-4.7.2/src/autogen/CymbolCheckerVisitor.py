@@ -234,11 +234,9 @@ class CymbolCheckerVisitor(CymbolVisitor):
         return out
 
     def visitReturnStat(self, ctx: CymbolParser.ReturnStatContext):
-        print(ctx.expr().getText())
         expr = self.visit(ctx.expr())
         tyype = self.variables_type["global"][self.namefunc]
         out =""
-        print(f'Return: {expr}\n')
         if expr:
             reg = expr.get_assigned_register()
             if expr.declarations != "":
@@ -254,8 +252,6 @@ class CymbolCheckerVisitor(CymbolVisitor):
                 reg = f'%{reg_aux}'
                 expr.type = TypeEnum.FLOAT            
             out += f'ret {expr.type} {reg}'
-        else:
-            out = f'ret {tyype} 0'
 
         return out
 
