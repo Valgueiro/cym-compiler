@@ -143,6 +143,11 @@ class CymbolCheckerVisitor(CymbolVisitor):
 
             for ret in returns:
                 block += f' {ret}\n'
+
+            
+        if block.find("ret ") == -1:
+            block += "ret i32 0;\n"
+
         out = f'define {tyype} @{name}({paramtypelist}) #0 {{ \n'
         out += block
         out += "\n}\n"
@@ -229,11 +234,12 @@ class CymbolCheckerVisitor(CymbolVisitor):
         return out
 
     def visitReturnStat(self, ctx: CymbolParser.ReturnStatContext):
+        print(ctx.expr().getText())
         expr = self.visit(ctx.expr())
         tyype = self.variables_type["global"][self.namefunc]
         out =""
+        print(f'Return: {expr}\n')
         if expr:
-
             reg = expr.get_assigned_register()
             if expr.declarations != "":
                 out += expr.declarations + '\n'

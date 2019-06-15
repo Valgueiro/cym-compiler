@@ -6,5 +6,4 @@ int sum (int a, int b){
 
 int main(){
     int x = sum(5,3);
-    return x;
 }
