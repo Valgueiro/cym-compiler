@@ -28,6 +28,6 @@ boolean CompExpr(){
 
 int main(){
     boolean x = andOrExpr();
-
+    x = CompExpr();
     return 0;
 }
