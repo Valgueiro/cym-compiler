@@ -338,7 +338,6 @@ class CymbolCheckerVisitor(CymbolVisitor):
 
     def visitParenExpr(self, ctx: CymbolParser.ParenExprContext):
         out = self.visit(ctx.expr())
-        print(out)
         return out
 
 
