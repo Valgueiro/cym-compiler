@@ -1,7 +1,8 @@
 int create(){
-    return 5 + 6;
+    return 5;
 }
 
 int main(){
-    return create();
+    create();
+    return 0;
 }
