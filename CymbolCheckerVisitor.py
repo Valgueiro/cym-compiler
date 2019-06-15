@@ -9,6 +9,8 @@ def float_to_hex(f):
 
     while range(len(out), 18):
       out += '0'
+    
+# out = hex(struct.unpack('<Q', struct.pack('<d', f))[0])[0:11] + "0000000"
        
     return out
 

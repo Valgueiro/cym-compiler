@@ -13,7 +13,16 @@ float retFloat(){
 }
 
 int retInt(){
-    return 4.59-10.4;
+    return 4.33-10.4;
+}
+
+int div(float a, float b){
+    a = 17.45;
+    return a/b;
+}
+
+boolean oxe(int e, float b, boolean x){
+    return (e > b) && x;
 }
 
 int main(){
@@ -22,5 +31,7 @@ int main(){
     float y = retInt();
     boolean z = and(true, false, true);
 
-    x = sum(retFloat(), retInt());
+    x = div(3.5, 4.33);
+    x = sum(w, retInt());
+    z = oxe(x, y, z);
 }
