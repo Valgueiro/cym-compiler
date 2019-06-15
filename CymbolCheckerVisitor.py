@@ -85,9 +85,9 @@ class RegisterHeap():
 
 #register_heap = RegisterHeap()
 function_heaps = {}
-
-
 class CymbolCheckerVisitor(CymbolVisitor):
+    funcparamtypes = {}
+    funcparamtypes["global"] = []
     variables_type = {}
     variables_type["global"] = {} 
     namefunc = "global"
@@ -109,8 +109,9 @@ class CymbolCheckerVisitor(CymbolVisitor):
         name = ctx.ID().getText()
         self.variables_type["global"][name]=tyype
         self.namefunc=name
+        self.variables_type[name]={}
+        self.funcparamtypes[name] = []
         function_heaps[name] = RegisterHeap()
-        self.variables_type[self.namefunc]={}
         block = ""
         paramtypelist = ""
         paramnamelist=[]
@@ -118,8 +119,9 @@ class CymbolCheckerVisitor(CymbolVisitor):
         firstparam=1
         if ctx.paramTypeList():
             paramlist = ctx.paramTypeList().paramType()
-            for paramtype in paramlist: #faz para o resto
+            for paramtype in paramlist: 
                 (rettyype, retname) = self.visit(paramtype)
+                (self.funcparamtypes[name]).append(rettyype)
                 if rettyype is not None:
                     if firstparam:
                         firstparam = 0
@@ -127,7 +129,7 @@ class CymbolCheckerVisitor(CymbolVisitor):
                     else:
                         paramtypelist += f', {rettyype}'
                 if retname is not None:
-                    paramnamelist.append(retname)
+                    paramnamelist.append(retname)           
             for paramname in paramnamelist:
                 block += f'%{paramname} = alloca {self.variables_type[self.namefunc][paramname]}, align 4\n'
             n = len(paramnamelist)
@@ -154,6 +156,14 @@ class CymbolCheckerVisitor(CymbolVisitor):
         self.namefunc="global"
 
         return out
+
+    def visitParamType(self, ctx: CymbolParser.ParamTypeContext):
+        tyype = TypeEnum(ctx.tyype().getText())
+        name = ctx.ID().getText()
+        self.variables_type[self.namefunc][name] = tyype
+        n = function_heaps[self.namefunc].get_new_register()
+
+        return (tyype, name)
 
     def visitVarDecl(self, ctx: CymbolParser.VarDeclContext):
         out = ""
@@ -182,14 +192,6 @@ class CymbolCheckerVisitor(CymbolVisitor):
                 (reg, expr, out) = self.convertIntFloat(reg, tyype, expr, out) 
                 out += f'store {expr.type} {reg}, {tyype}* %{name}, align 4\n'
         return out
-
-    def visitParamType(self, ctx: CymbolParser.ParamTypeContext):
-        tyype = TypeEnum(ctx.tyype().getText())
-        name = ctx.ID().getText()
-        self.variables_type[self.namefunc][name] = tyype
-        n = function_heaps[self.namefunc].get_new_register()
-
-        return (f'{tyype}', name)
 
     def visitAssignStat(self, ctx: CymbolParser.AssignStatContext):
         name = ctx.ID().getText()
@@ -250,6 +252,7 @@ class CymbolCheckerVisitor(CymbolVisitor):
         tyype = self.variables_type["global"][name]
         out = ""
         paramout = ""
+        i=0
         firstparam = 1
         if ctx.exprList():
             exprlist = ctx.exprList().expr()
@@ -258,11 +261,13 @@ class CymbolCheckerVisitor(CymbolVisitor):
                 reg=expr.get_assigned_register()
                 if expr.declarations != "":
                     out += expr.declarations + '\n'
+                (reg, expr, out) = self.convertIntFloat(reg, self.funcparamtypes[name][i], expr, out) 
                 if firstparam:
                     paramout += f'{expr.type} {reg}'
                     firstparam=0
                 else:
                     paramout += f', {expr.type} {reg}'
+                i=i+1
         out_reg = function_heaps[self.namefunc].get_new_register()
         out += f'%{out_reg} = call {tyype} @{name}({paramout})\n'
         expression = Expr(tyype, f'%{out_reg}', declarations=out, loaded= True, nmfnc = self.namefunc)
