@@ -341,7 +341,6 @@ class CymbolCheckerVisitor(CymbolVisitor):
                             declarations=out, loaded=True)
                             
         return expression
-        out = ""
 
     def visitAndOrExpr(self, ctx: CymbolParser.AndOrExprContext):
         expr_1 = self.visit(ctx.expr()[0])
