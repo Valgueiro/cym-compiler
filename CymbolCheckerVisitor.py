@@ -2,6 +2,15 @@ from antlr4 import *
 from autogen.CymbolParser import CymbolParser
 from autogen.CymbolVisitor import CymbolVisitor
 from enum import Enum
+import struct
+
+def float_to_hex(f):
+    out = hex(struct.unpack('<I', struct.pack('<f', f))[0])
+
+    while range(len(out), 18):
+      out += '0'
+       
+    return out
 
 
 #consertar conversao float/int de:
@@ -250,9 +259,8 @@ class CymbolCheckerVisitor(CymbolVisitor):
         return Expr(tyype, value, loaded=True)
 
     def visitFloatExpr(self, ctx: CymbolParser.FloatExprContext):
-        # TODO probably we will have to transform text to hexadecimal
         tyype = TypeEnum.FLOAT
-        value = ctx.FLOAT().getText()
+        value = float_to_hex(float(ctx.FLOAT().getText()))
         return Expr(tyype, value, loaded=True)
 
     def visitBooleanExpr(self, ctx: CymbolParser.BooleanExprContext):
@@ -395,7 +403,8 @@ class CymbolCheckerVisitor(CymbolVisitor):
             symbol = 'and'
         else:
             symbol = 'or'
-
+        
+        out = ""
         if expr_1.type == expr_2.type:
             tyype = expr_1.type
 
@@ -408,7 +417,7 @@ class CymbolCheckerVisitor(CymbolVisitor):
                 out += (expr_2.declarations + '\n')
             
             out_reg = function_heaps[self.namefunc].get_new_register()
-            out = f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
+            out += f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
             return Expr(tyype, f'%{out_reg}', declarations=out, loaded= True, nmfnc=self.namefunc)
 
 
@@ -426,6 +435,7 @@ class CymbolCheckerVisitor(CymbolVisitor):
         elif ctx.op.text == '>=':
             symbol += 'sge'
 
+        out = ""
         if expr_1.type == expr_2.type:
             tyype = expr_1.type
 
@@ -438,7 +448,7 @@ class CymbolCheckerVisitor(CymbolVisitor):
                 out += (expr_2.declarations + '\n')
             
             out_reg = function_heaps[self.namefunc].get_new_register()
-            out = f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
+            out += f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
             return Expr(TypeEnum.BOOLEAN, f'%{out_reg}', declarations=out, loaded= True, nmfnc=self.namefunc)
     
     def visitEqualNotEqualExpr(self, ctx: CymbolParser.EqualNotEqualExprContext):
@@ -450,7 +460,8 @@ class CymbolCheckerVisitor(CymbolVisitor):
             symbol += 'eq'
         else:
             symbol += 'ne'
-
+        
+        out = ""
         if expr_1.type == expr_2.type:
             tyype = expr_1.type
 
@@ -463,7 +474,7 @@ class CymbolCheckerVisitor(CymbolVisitor):
                 out += (expr_2.declarations + '\n')
             
             out_reg = function_heaps[self.namefunc].get_new_register()
-            out = f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
+            out += f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
             return Expr(TypeEnum.BOOLEAN, f'%{out_reg}', declarations=out, loaded= True, nmfnc=self.namefunc)
     
     def visitNotExpr(self, ctx: CymbolParser.NotExprContext):
@@ -477,5 +488,5 @@ class CymbolCheckerVisitor(CymbolVisitor):
             out += expr.declarations + '\n'
 
         out_reg = function_heaps[self.namefunc].get_new_register()
-        out = f'%{out_reg} = icmp ne {tyype} {register}, 0\n'
+        out += f'%{out_reg} = icmp ne {tyype} {register}, 0\n'
         return Expr(TypeEnum.BOOLEAN, f'%{out_reg}', declarations=out, loaded= True, nmfnc=self.namefunc)
