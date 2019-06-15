@@ -143,11 +143,6 @@ class CymbolCheckerVisitor(CymbolVisitor):
 
             for ret in returns:
                 block += f' {ret}\n'
-
-            
-        if block.find("ret ") == -1:
-            block += "ret i32 0;\n"
-
         out = f'define {tyype} @{name}({paramtypelist}) #0 {{ \n'
         out += block
         out += "\n}\n"
@@ -211,11 +206,14 @@ class CymbolCheckerVisitor(CymbolVisitor):
         tyype = self.variables_type["global"][self.namefunc]
         out =""
         if expr:
+
             reg = expr.get_assigned_register()
             if expr.declarations != "":
                 out += expr.declarations + '\n'
             (reg, expr, out) = self.convertIntFloat(reg, tyype, expr, out)            
             out += f'ret {expr.type} {reg}'
+        else:
+            out = f'ret {tyype} 0'
 
         return out
 
@@ -330,11 +328,6 @@ class CymbolCheckerVisitor(CymbolVisitor):
         out += f'%{out_reg} = icmp ne {tyype} {register}, 0\n'
         return Expr(TypeEnum.BOOLEAN, f'%{out_reg}', declarations=out, loaded= True, nmfnc=self.namefunc)
 
-    def visitParenExpr(self, ctx: CymbolParser.ParenExprContext):
-        out = self.visit(ctx.expr())
-        print(out)
-        return out
-
 
     def convertIntFloat(self, reg, tyype, expr, out):
         if tyype == TypeEnum.INT and expr.type == TypeEnum.FLOAT:
@@ -352,93 +345,93 @@ class CymbolCheckerVisitor(CymbolVisitor):
 
 
     def binaryNumericExpr(self, ctx, boolret):
-        expr_1 = self.visit(ctx.expr()[0])
-        expr_2 = self.visit(ctx.expr()[1])
-        tyype = TypeEnum.INT
-        out = ""
-        register_1 = expr_1.get_assigned_register()
-        if expr_1.declarations != "":
-            out += expr_1.declarations + '\n'
+            expr_1 = self.visit(ctx.expr()[0])
+            expr_2 = self.visit(ctx.expr()[1])
+            tyype = TypeEnum.INT
+            out = ""
+            register_1 = expr_1.get_assigned_register()
+            if expr_1.declarations != "":
+                out += expr_1.declarations + '\n'
 
-        register_2 = expr_2.get_assigned_register()
-        if expr_2.declarations != "":
-            out += (expr_2.declarations + '\n')
-        #conversao de tipos
-        if expr_1.type == TypeEnum.FLOAT:
-            tyype = TypeEnum.FLOAT
-            if expr_2.type == TypeEnum.INT:
-                reg_aux = function_heaps[self.namefunc].get_new_register()
-                out += f'%{reg_aux} = sitofp i32 {register_2} to float\n'
-                register_2 = f'%{reg_aux}'
-        elif expr_2.type == TypeEnum.FLOAT:
-            tyype = TypeEnum.FLOAT
-            if expr_1.type == TypeEnum.INT:
-                reg_aux = function_heaps[self.namefunc].get_new_register()
-                out += f'%{reg_aux} = sitofp i32 {register_1} to float\n'
-                register_1 = f'%{reg_aux}'                
-        
-        if ctx.op.text == '+':
-            if tyype == TypeEnum.FLOAT:
-                symbol = 'fadd' 
-            else:
-                symbol = 'add'
-        elif ctx.op.text == '-':
-            if tyype == TypeEnum.FLOAT:
-                symbol = 'fsub' 
-            else:
-                symbol = 'sub'
+            register_2 = expr_2.get_assigned_register()
+            if expr_2.declarations != "":
+                out += (expr_2.declarations + '\n')
+            #conversao de tipos
+            if expr_1.type == TypeEnum.FLOAT:
+                tyype = TypeEnum.FLOAT
+                if expr_2.type == TypeEnum.INT:
+                    reg_aux = function_heaps[self.namefunc].get_new_register()
+                    out += f'%{reg_aux} = sitofp i32 {register_2} to float\n'
+                    register_2 = f'%{reg_aux}'
+            elif expr_2.type == TypeEnum.FLOAT:
+                tyype = TypeEnum.FLOAT
+                if expr_1.type == TypeEnum.INT:
+                    reg_aux = function_heaps[self.namefunc].get_new_register()
+                    out += f'%{reg_aux} = sitofp i32 {register_1} to float\n'
+                    register_1 = f'%{reg_aux}'                
+            
+            if ctx.op.text == '+':
+                if tyype == TypeEnum.FLOAT:
+                    symbol = 'fadd' 
+                else:
+                    symbol = 'add'
+            elif ctx.op.text == '-':
+                if tyype == TypeEnum.FLOAT:
+                    symbol = 'fsub' 
+                else:
+                    symbol = 'sub'
 
-        elif ctx.op.text == '*':
-            if tyype == TypeEnum.FLOAT:
-                symbol = 'fmul' 
-            else:
-                symbol = 'mul'
-        elif ctx.op.text == '/':
-            if tyype == TypeEnum.FLOAT:
-                symbol = 'fdiv' 
-            else:
-                symbol = 'sdiv'
+            elif ctx.op.text == '*':
+                if tyype == TypeEnum.FLOAT:
+                    symbol = 'fmul' 
+                else:
+                    symbol = 'mul'
+            elif ctx.op.text == '/':
+                if tyype == TypeEnum.FLOAT:
+                    symbol = 'fdiv' 
+                else:
+                    symbol = 'sdiv'
 
-        elif ctx.op.text == '<':
-            if tyype == TypeEnum.FLOAT:
-                symbol = 'fcmp olt' 
-            else:
-                symbol = 'icmp slt'
+            elif ctx.op.text == '<':
+                if tyype == TypeEnum.FLOAT:
+                    symbol = 'fcmp olt' 
+                else:
+                    symbol = 'icmp slt'
 
-        elif ctx.op.text == '<=':
-            if tyype == TypeEnum.FLOAT:
-                symbol = 'fcmp ole' 
-            else:
-                symbol = 'icmp sle'
+            elif ctx.op.text == '<=':
+                if tyype == TypeEnum.FLOAT:
+                    symbol = 'fcmp ole' 
+                else:
+                    symbol = 'icmp sle'
 
-        elif ctx.op.text == '>':
-            if tyype == TypeEnum.FLOAT:
-                symbol = 'fcmp ogt' 
-            else:
-                symbol = 'icmp sgt'
+            elif ctx.op.text == '>':
+                if tyype == TypeEnum.FLOAT:
+                    symbol = 'fcmp ogt' 
+                else:
+                    symbol = 'icmp sgt'
 
-        elif ctx.op.text == '>=':
-            if tyype == TypeEnum.FLOAT:
-                symbol = 'fcmp oge' 
-            else:
-                symbol = 'icmp sge'
+            elif ctx.op.text == '>=':
+                if tyype == TypeEnum.FLOAT:
+                    symbol = 'fcmp oge' 
+                else:
+                    symbol = 'icmp sge'
 
-        elif ctx.op.text == '==':
-            if tyype == TypeEnum.FLOAT:
-                symbol = 'fcmp oeq' 
-            else:
-                symbol = 'icmp eq'
+            elif ctx.op.text == '==':
+                if tyype == TypeEnum.FLOAT:
+                    symbol = 'fcmp oeq' 
+                else:
+                    symbol = 'icmp eq'
 
-        elif ctx.op.text == '!=':
-            if tyype == TypeEnum.FLOAT:
-                symbol = 'fcmp one' 
-            else:
-                symbol = 'icmp ne'   
+            elif ctx.op.text == '!=':
+                if tyype == TypeEnum.FLOAT:
+                    symbol = 'fcmp one' 
+                else:
+                    symbol = 'icmp ne'   
 
-        out_reg = function_heaps[self.namefunc].get_new_register()
-        out += f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
-        if boolret:
-            tyype = TypeEnum.BOOLEAN
-        expression = Expr(tyype, f'%{out_reg}', declarations=out, loaded= True, nmfnc=self.namefunc)
-                            
-        return expression
+            out_reg = function_heaps[self.namefunc].get_new_register()
+            out += f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
+            if boolret:
+                tyype = TypeEnum.BOOLEAN
+            expression = Expr(tyype, f'%{out_reg}', declarations=out, loaded= True, nmfnc=self.namefunc)
+                                
+            return expression
