@@ -2,6 +2,15 @@ from antlr4 import *
 from autogen.CymbolParser import CymbolParser
 from autogen.CymbolVisitor import CymbolVisitor
 from enum import Enum
+import struct
+
+def float_to_hex(f):
+    out = hex(struct.unpack('<I', struct.pack('<f', f))[0])
+
+    while range(len(out), 18):
+      out += '0'
+       
+    return out
 
 
 class TypeEnum(Enum):
@@ -205,9 +214,8 @@ class CymbolCheckerVisitor(CymbolVisitor):
         return Expr(tyype, value, loaded=True)
 
     def visitFloatExpr(self, ctx: CymbolParser.FloatExprContext):
-        # TODO probably we will have to transform text to hexadecimal
         tyype = TypeEnum.FLOAT
-        value = ctx.FLOAT().getText()
+        value = float_to_hex(float(ctx.FLOAT().getText()))
         return Expr(tyype, value, loaded=True)
 
     def visitBooleanExpr(self, ctx: CymbolParser.BooleanExprContext):

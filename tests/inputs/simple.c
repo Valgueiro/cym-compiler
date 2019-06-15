@@ -1,6 +1,8 @@
-#include<stdbool.h>
-bool main(){
-    int x = 32;
-    int y = 16;
-    return true;
+float create(){
+    return 3 - 4;
+}
+
+int main(){
+    int x = create();
+    return 0;
 }
