@@ -98,54 +98,108 @@ define i1 @CompExpr() #0 {
  
  %6 = icmp sgt i32 %5, 3
  
- store i1 %6, i1* %res, align 4
+ %7 = load i32, i32* %a, align 4
  
- %7 = load float, float* %b, align 4
+ %8 = sitofp i32 %7 to float
+ %9 = fcmp olt float %8, 0x40547ae100000000
  
- %8 = fcmp olt float %7, 0x40adc28f00000000
+ %10 = and i1 %6, %9
  
- store i1 %8, i1* %res, align 4
+ %11 = load i32, i32* %a, align 4
  
- %9 = load i32, i32* %a, align 4
- 
- %10 = icmp sle i32 %9, 3
- 
- %11 = load float, float* %b, align 4
- 
- %12 = fcmp oge float %11, 0x40adc28f00000000
+ %12 = icmp sge i32 %11, 5
  
  %13 = and i1 %10, %12
  
- %14 = load float, float* %b, align 4
+ %14 = load i32, i32* %a, align 4
  
- %15 = sitofp i32 5 to float
- %16 = fcmp oeq float %14, %15
+ %15 = icmp sle i32 %14, 17
  
- %17 = icmp ne i1 %16, 0
+ %16 = or i1 %13, %15
  
- %18 = and i1 %13, %17
+ store i1 %16, i1* %res, align 4
  
- store i1 %18, i1* %res, align 4
+ %17 = load float, float* %b, align 4
  
- %19 = load i32, i32* %a, align 4
+ %18 = fcmp olt float %17, 0x40adc28f00000000
  
- %20 = sitofp i32 %19 to float
- %21 = fcmp one float %20, 0x404eb85200000000
+ %19 = load float, float* %b, align 4
  
- %22 = load i32, i32* %a, align 4
+ %20 = fcmp ogt float %19, 0x405eb85200000000
  
- %23 = load float, float* %b, align 4
+ %21 = and i1 %18, %20
  
- %24 = sitofp i32 %22 to float
- %25 = fcmp one float %24, %23
+ %22 = load float, float* %b, align 4
  
- %26 = and i1 %21, %25
+ %23 = sitofp i32 2 to float
+ %24 = fcmp ole float %23, %22
  
- store i1 %26, i1* %res, align 4
+ %25 = and i1 %21, %24
  
- %27 = load i1, i1* %res, align 4
+ %26 = load float, float* %b, align 4
  
- ret i1 %27
+ %27 = sitofp i32 24 to float
+ %28 = fcmp oge float %26, %27
+ 
+ %29 = and i1 %25, %28
+ 
+ store i1 %29, i1* %res, align 4
+ 
+ %30 = load i32, i32* %a, align 4
+ 
+ %31 = icmp sle i32 %30, 3
+ 
+ %32 = load float, float* %b, align 4
+ 
+ %33 = fcmp oge float %32, 0x40adc28f00000000
+ 
+ %34 = and i1 %31, %33
+ 
+ %35 = load float, float* %b, align 4
+ 
+ %36 = sitofp i32 5 to float
+ %37 = fcmp oeq float %35, %36
+ 
+ %38 = icmp ne i1 %37, 0
+ 
+ %39 = and i1 %34, %38
+ 
+ store i1 %39, i1* %res, align 4
+ 
+ %40 = load i32, i32* %a, align 4
+ 
+ %41 = sitofp i32 %40 to float
+ %42 = fcmp one float %41, 0x404eb85200000000
+ 
+ %43 = load i32, i32* %a, align 4
+ 
+ %44 = load float, float* %b, align 4
+ 
+ %45 = sitofp i32 %43 to float
+ %46 = fcmp one float %45, %44
+ 
+ %47 = and i1 %42, %46
+ 
+ store i1 %47, i1* %res, align 4
+ 
+ %52 = load i1, i1* %res, align 4
+ 
+ %48 = icmp eq i32 3, 4
+ 
+ %49 = sitofp i32 4 to float
+ %50 = fcmp one float %49, 0x408e666600000000
+ 
+ %51 = and i1 %48, %50
+ 
+ %53 = and i1 %52, %51
+ 
+ store i1 %53, i1* %res, align 4
+ 
+ %54 = load i1, i1* %res, align 4
+ 
+ %55 = icmp ne i1 %54, 0
+ 
+ ret i1 %55
 
 }
 define i1 @notExpr() #0 { 

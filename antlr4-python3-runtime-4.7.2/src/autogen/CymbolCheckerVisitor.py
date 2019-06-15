@@ -288,8 +288,6 @@ class CymbolCheckerVisitor(CymbolVisitor):
         return expression
     
     def visitEqualNotEqualExpr(self, ctx: CymbolParser.EqualNotEqualExprContext):
-        print(ctx.expr()[0].getText())
-        print(ctx.expr()[1].getText())
         expression = self.binaryNumericExpr(ctx, 1)
         return expression        
 
