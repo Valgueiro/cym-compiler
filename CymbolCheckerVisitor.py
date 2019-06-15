@@ -13,6 +13,9 @@ def float_to_hex(f):
     return out
 
 
+#consertar conversao float/int de:
+#function call
+
 class TypeEnum(Enum):
     INT = "int"  # , llvm_type: "i32"}
     FLOAT = "float"  # llvm_type: "float"}
@@ -102,7 +105,7 @@ class CymbolCheckerVisitor(CymbolVisitor):
             file.write(output)
 
     def visitFuncDecl(self, ctx: CymbolParser.FuncDeclContext):
-        tyype = TypeEnum(ctx.tyype().getText()).get_llvm_type()
+        tyype = TypeEnum(ctx.tyype().getText())
         name = ctx.ID().getText()
         self.variables_type["global"][name]=tyype
         self.namefunc=name
@@ -148,14 +151,27 @@ class CymbolCheckerVisitor(CymbolVisitor):
         return out
 
     def visitVarDecl(self, ctx: CymbolParser.VarDeclContext):
+        out = ""
         tyype = TypeEnum(ctx.tyype().getText())
         name = ctx.ID().getText()
         self.variables_type[self.namefunc][name] = tyype
         if self.namefunc == "global":
             if ctx.expr() is not None:
                 expr = self.visit(ctx.expr())
-                out = expr.declarations
-                out += f'@{name} = global {tyype} {expr.value}, align 4\n'
+                reg = expr.get_assigned_register()
+                if expr.declarations != "":
+                    out += expr.declarations + '\n'
+                if tyype == TypeEnum.INT and expr.type == TypeEnum.FLOAT:
+                    reg_aux = function_heaps[self.namefunc].get_new_register()
+                    out += f'%{reg_aux} = fptosi float {reg} to i32\n'
+                    reg = f'%{reg_aux}'
+                    expr.type = TypeEnum.INT
+                elif tyype == TypeEnum.FLOAT and expr.type == TypeEnum.INT:
+                    reg_aux = function_heaps[self.namefunc].get_new_register()
+                    out += f'%{reg_aux} = sitofp i32 {reg} to float\n'
+                    reg = f'%{reg_aux}'
+                    expr.type = TypeEnum.FLOAT               
+                out += f'@{name} = global {tyype} {reg}, align 4\n'
             else:
                 out = f'@{name} = common global {tyype} 0, align 4\n' 
             
@@ -164,8 +180,20 @@ class CymbolCheckerVisitor(CymbolVisitor):
             out = mem_alloc
             if ctx.expr() is not None:
                 expr = self.visit(ctx.expr())
-                out += expr.declarations
-                out += f'store {expr.type} {expr.value}, {tyype}* %{name}, align 4\n'
+                reg = expr.get_assigned_register()
+                if expr.declarations != "":
+                    out += expr.declarations + '\n'
+                if tyype == TypeEnum.INT and expr.type == TypeEnum.FLOAT:
+                    reg_aux = function_heaps[self.namefunc].get_new_register()
+                    out += f'%{reg_aux} = fptosi float {reg} to i32\n'
+                    reg = f'%{reg_aux}'
+                    expr.type = TypeEnum.INT
+                elif tyype == TypeEnum.FLOAT and expr.type == TypeEnum.INT:
+                    reg_aux = function_heaps[self.namefunc].get_new_register()
+                    out += f'%{reg_aux} = sitofp i32 {reg} to float\n'
+                    reg = f'%{reg_aux}'
+                    expr.type = TypeEnum.FLOAT
+                out += f'store {expr.type} {reg}, {tyype}* %{name}, align 4\n'
         return out
 
     def visitParamType(self, ctx: CymbolParser.ParamTypeContext):
@@ -178,33 +206,50 @@ class CymbolCheckerVisitor(CymbolVisitor):
 
     def visitAssignStat(self, ctx: CymbolParser.AssignStatContext):
         name = ctx.ID().getText()
+        out = ""
         if name in self.variables_type[self.namefunc]:
             tyype = self.variables_type[self.namefunc][name]
         else:
             tyype = self.variables_type["global"][name]
         expr = self.visit(ctx.expr())
-        out  = expr.declarations
+        reg = expr.get_assigned_register()
+        if expr.declarations != "":
+            out += expr.declarations + '\n'
         if tyype == TypeEnum.INT and expr.type == TypeEnum.FLOAT:
             reg_aux = function_heaps[self.namefunc].get_new_register()
-            out += f'%{reg_aux} = fptosi float {expr.value} to i32\n'
-            expr.value = f'%{reg_aux}'
+            out += f'%{reg_aux} = fptosi float {reg} to i32\n'
+            reg = f'%{reg_aux}'
             expr.type = TypeEnum.INT
         elif tyype == TypeEnum.FLOAT and expr.type == TypeEnum.INT:
             reg_aux = function_heaps[self.namefunc].get_new_register()
-            out += f'%{reg_aux} = sitofp i32 {expr.value} to float\n'
-            expr.value = f'%{reg_aux}'
-            expr.type = TypeEnum.INT
-        out += f'store {expr.type} {expr.value}, {tyype}* %{name}, align 4\n'
+            out += f'%{reg_aux} = sitofp i32 {reg} to float\n'
+            reg = f'%{reg_aux}'
+            expr.type = TypeEnum.FLOAT
+        out += f'store {expr.type} {reg}, {tyype}* %{name}, align 4\n'
         return out
 
     def visitReturnStat(self, ctx: CymbolParser.ReturnStatContext):
         expr = self.visit(ctx.expr())
+        tyype = self.variables_type["global"][self.namefunc]
+        out =""
         if expr:
+
             reg = expr.get_assigned_register()
-            out = expr.declarations + '\n'
+            if expr.declarations != "":
+                out += expr.declarations + '\n'
+            if tyype == TypeEnum.INT and expr.type == TypeEnum.FLOAT:
+                reg_aux = function_heaps[self.namefunc].get_new_register()
+                out += f'%{reg_aux} = fptosi float {reg} to i32\n'
+                reg = f'%{reg_aux}'
+                expr.type = TypeEnum.INT
+            elif tyype == TypeEnum.FLOAT and expr.type == TypeEnum.INT:
+                reg_aux = function_heaps[self.namefunc].get_new_register()
+                out += f'%{reg_aux} = sitofp i32 {reg} to float\n'
+                reg = f'%{reg_aux}'
+                expr.type = TypeEnum.FLOAT            
             out += f'ret {expr.type} {reg}'
         else:
-            out = 'ret i32 0'
+            out = f'ret {tyype} 0'
 
         return out
 
