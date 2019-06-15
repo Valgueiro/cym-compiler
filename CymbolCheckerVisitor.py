@@ -85,9 +85,9 @@ class RegisterHeap():
 
 #register_heap = RegisterHeap()
 function_heaps = {}
-
-
 class CymbolCheckerVisitor(CymbolVisitor):
+    funcparamtypes = {}
+    funcparamtypes["global"] = []
     variables_type = {}
     variables_type["global"] = {} 
     namefunc = "global"
@@ -109,8 +109,9 @@ class CymbolCheckerVisitor(CymbolVisitor):
         name = ctx.ID().getText()
         self.variables_type["global"][name]=tyype
         self.namefunc=name
+        self.variables_type[name]={}
+        self.funcparamtypes[name] = []
         function_heaps[name] = RegisterHeap()
-        self.variables_type[self.namefunc]={}
         block = ""
         paramtypelist = ""
         paramnamelist=[]
@@ -118,8 +119,9 @@ class CymbolCheckerVisitor(CymbolVisitor):
         firstparam=1
         if ctx.paramTypeList():
             paramlist = ctx.paramTypeList().paramType()
-            for paramtype in paramlist: #faz para o resto
+            for paramtype in paramlist: 
                 (rettyype, retname) = self.visit(paramtype)
+                (self.funcparamtypes[name]).append(rettyype)
                 if rettyype is not None:
                     if firstparam:
                         firstparam = 0
@@ -127,7 +129,7 @@ class CymbolCheckerVisitor(CymbolVisitor):
                     else:
                         paramtypelist += f', {rettyype}'
                 if retname is not None:
-                    paramnamelist.append(retname)
+                    paramnamelist.append(retname)           
             for paramname in paramnamelist:
                 block += f'%{paramname} = alloca {self.variables_type[self.namefunc][paramname]}, align 4\n'
             n = len(paramnamelist)
@@ -155,6 +157,14 @@ class CymbolCheckerVisitor(CymbolVisitor):
 
         return out
 
+    def visitParamType(self, ctx: CymbolParser.ParamTypeContext):
+        tyype = TypeEnum(ctx.tyype().getText())
+        name = ctx.ID().getText()
+        self.variables_type[self.namefunc][name] = tyype
+        n = function_heaps[self.namefunc].get_new_register()
+
+        return (tyype, name)
+
     def visitVarDecl(self, ctx: CymbolParser.VarDeclContext):
         out = ""
         tyype = TypeEnum(ctx.tyype().getText())
@@ -166,16 +176,7 @@ class CymbolCheckerVisitor(CymbolVisitor):
                 reg = expr.get_assigned_register()
                 if expr.declarations != "":
                     out += expr.declarations + '\n'
-                if tyype == TypeEnum.INT and expr.type == TypeEnum.FLOAT:
-                    reg_aux = function_heaps[self.namefunc].get_new_register()
-                    out += f'%{reg_aux} = fptosi float {reg} to i32\n'
-                    reg = f'%{reg_aux}'
-                    expr.type = TypeEnum.INT
-                elif tyype == TypeEnum.FLOAT and expr.type == TypeEnum.INT:
-                    reg_aux = function_heaps[self.namefunc].get_new_register()
-                    out += f'%{reg_aux} = sitofp i32 {reg} to float\n'
-                    reg = f'%{reg_aux}'
-                    expr.type = TypeEnum.FLOAT               
+                (reg, expr, out) = self.convertIntFloat(reg, tyype, expr, out)               
                 out += f'@{name} = global {tyype} {reg}, align 4\n'
             else:
                 out = f'@{name} = common global {tyype} 0, align 4\n' 
@@ -188,26 +189,9 @@ class CymbolCheckerVisitor(CymbolVisitor):
                 reg = expr.get_assigned_register()
                 if expr.declarations != "":
                     out += expr.declarations + '\n'
-                if tyype == TypeEnum.INT and expr.type == TypeEnum.FLOAT:
-                    reg_aux = function_heaps[self.namefunc].get_new_register()
-                    out += f'%{reg_aux} = fptosi float {reg} to i32\n'
-                    reg = f'%{reg_aux}'
-                    expr.type = TypeEnum.INT
-                elif tyype == TypeEnum.FLOAT and expr.type == TypeEnum.INT:
-                    reg_aux = function_heaps[self.namefunc].get_new_register()
-                    out += f'%{reg_aux} = sitofp i32 {reg} to float\n'
-                    reg = f'%{reg_aux}'
-                    expr.type = TypeEnum.FLOAT
+                (reg, expr, out) = self.convertIntFloat(reg, tyype, expr, out) 
                 out += f'store {expr.type} {reg}, {tyype}* %{name}, align 4\n'
         return out
-
-    def visitParamType(self, ctx: CymbolParser.ParamTypeContext):
-        tyype = TypeEnum(ctx.tyype().getText())
-        name = ctx.ID().getText()
-        self.variables_type[self.namefunc][name] = tyype
-        n = function_heaps[self.namefunc].get_new_register()
-
-        return (f'{tyype}', name)
 
     def visitAssignStat(self, ctx: CymbolParser.AssignStatContext):
         name = ctx.ID().getText()
@@ -220,16 +204,7 @@ class CymbolCheckerVisitor(CymbolVisitor):
         reg = expr.get_assigned_register()
         if expr.declarations != "":
             out += expr.declarations + '\n'
-        if tyype == TypeEnum.INT and expr.type == TypeEnum.FLOAT:
-            reg_aux = function_heaps[self.namefunc].get_new_register()
-            out += f'%{reg_aux} = fptosi float {reg} to i32\n'
-            reg = f'%{reg_aux}'
-            expr.type = TypeEnum.INT
-        elif tyype == TypeEnum.FLOAT and expr.type == TypeEnum.INT:
-            reg_aux = function_heaps[self.namefunc].get_new_register()
-            out += f'%{reg_aux} = sitofp i32 {reg} to float\n'
-            reg = f'%{reg_aux}'
-            expr.type = TypeEnum.FLOAT
+        (reg, expr, out) = self.convertIntFloat(reg, tyype, expr, out)     
         out += f'store {expr.type} {reg}, {tyype}* %{name}, align 4\n'
         return out
 
@@ -241,16 +216,7 @@ class CymbolCheckerVisitor(CymbolVisitor):
             reg = expr.get_assigned_register()
             if expr.declarations != "":
                 out += expr.declarations + '\n'
-            if tyype == TypeEnum.INT and expr.type == TypeEnum.FLOAT:
-                reg_aux = function_heaps[self.namefunc].get_new_register()
-                out += f'%{reg_aux} = fptosi float {reg} to i32\n'
-                reg = f'%{reg_aux}'
-                expr.type = TypeEnum.INT
-            elif tyype == TypeEnum.FLOAT and expr.type == TypeEnum.INT:
-                reg_aux = function_heaps[self.namefunc].get_new_register()
-                out += f'%{reg_aux} = sitofp i32 {reg} to float\n'
-                reg = f'%{reg_aux}'
-                expr.type = TypeEnum.FLOAT            
+            (reg, expr, out) = self.convertIntFloat(reg, tyype, expr, out)            
             out += f'ret {expr.type} {reg}'
 
         return out
@@ -286,6 +252,7 @@ class CymbolCheckerVisitor(CymbolVisitor):
         tyype = self.variables_type["global"][name]
         out = ""
         paramout = ""
+        i=0
         firstparam = 1
         if ctx.exprList():
             exprlist = ctx.exprList().expr()
@@ -294,11 +261,13 @@ class CymbolCheckerVisitor(CymbolVisitor):
                 reg=expr.get_assigned_register()
                 if expr.declarations != "":
                     out += expr.declarations + '\n'
+                (reg, expr, out) = self.convertIntFloat(reg, self.funcparamtypes[name][i], expr, out) 
                 if firstparam:
                     paramout += f'{expr.type} {reg}'
                     firstparam=0
                 else:
                     paramout += f', {expr.type} {reg}'
+                i=i+1
         out_reg = function_heaps[self.namefunc].get_new_register()
         out += f'%{out_reg} = call {tyype} @{name}({paramout})\n'
         expression = Expr(tyype, f'%{out_reg}', declarations=out, loaded= True, nmfnc = self.namefunc)
@@ -312,14 +281,88 @@ class CymbolCheckerVisitor(CymbolVisitor):
         return ""
 
     def visitAddSubExpr(self, ctx: CymbolParser.AddSubExprContext):
+        expression = self.binaryNumericExpr(ctx, 0)           
+        return expression
+
+    def visitMultDivExpr(self, ctx: CymbolParser.MultDivExprContext):
+        expression = self.binaryNumericExpr(ctx, 0)                   
+        return expression
+
+    def visitCompExpr(self, ctx: CymbolParser.CompExprContext):
+        expression = self.binaryNumericExpr(ctx, 1)
+        return expression
+    
+    def visitEqualNotEqualExpr(self, ctx: CymbolParser.EqualNotEqualExprContext):
+        expression = self.binaryNumericExpr(ctx, 1)
+        return expression        
+
+    def visitAndOrExpr(self, ctx: CymbolParser.AndOrExprContext):
+        if ctx.op.text == '&&':
+            symbol = 'and'
+        else:
+            symbol = 'or'
+        out = ""
+
         expr_1 = self.visit(ctx.expr()[0])
+        register_1 = expr_1.get_assigned_register()
+        if expr_1.declarations != "":
+            out += expr_1.declarations + '\n' 
+
         expr_2 = self.visit(ctx.expr()[1])
+        register_2 = expr_2.get_assigned_register()
+        if expr_2.declarations != "":
+            out += (expr_2.declarations + '\n')
+
+        if expr_1.type == expr_2.type:
+            tyype = expr_1.type
+            
+            out_reg = function_heaps[self.namefunc].get_new_register()
+            out += f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
+            return Expr(tyype, f'%{out_reg}', declarations=out, loaded= True, nmfnc=self.namefunc)
+    
+    def visitNotExpr(self, ctx: CymbolParser.NotExprContext):
+        expr = self.visit(ctx.expr())
+        
+        tyype = expr.type
+        out = ""
+
+        register = expr.get_assigned_register()
+        if expr.declarations != "":
+            out += expr.declarations + '\n'
+
+        out_reg = function_heaps[self.namefunc].get_new_register()
+        out += f'%{out_reg} = icmp ne {tyype} {register}, 0\n'
+        return Expr(TypeEnum.BOOLEAN, f'%{out_reg}', declarations=out, loaded= True, nmfnc=self.namefunc)
+
+    def visitParenExpr(self, ctx: CymbolParser.ParenExprContext):
+        out = self.visit(ctx.expr())
+        print(out)
+        return out
+
+
+    def convertIntFloat(self, reg, tyype, expr, out):
+        if tyype == TypeEnum.INT and expr.type == TypeEnum.FLOAT:
+            reg_aux = function_heaps[self.namefunc].get_new_register()
+            out += f'%{reg_aux} = fptosi float {reg} to i32\n'
+            reg = f'%{reg_aux}'
+            expr.type = TypeEnum.INT
+        elif tyype == TypeEnum.FLOAT and expr.type == TypeEnum.INT:
+            reg_aux = function_heaps[self.namefunc].get_new_register()
+            out += f'%{reg_aux} = sitofp i32 {reg} to float\n'
+            reg = f'%{reg_aux}'
+            expr.type = TypeEnum.FLOAT
+        return (reg, expr, out)
+
+
+
+    def binaryNumericExpr(self, ctx, boolret):
         tyype = TypeEnum.INT
         out = ""
+        expr_1 = self.visit(ctx.expr()[0])
         register_1 = expr_1.get_assigned_register()
         if expr_1.declarations != "":
             out += expr_1.declarations + '\n'
-
+        expr_2 = self.visit(ctx.expr()[1])
         register_2 = expr_2.get_assigned_register()
         if expr_2.declarations != "":
             out += (expr_2.declarations + '\n')
@@ -342,153 +385,63 @@ class CymbolCheckerVisitor(CymbolVisitor):
                 symbol = 'fadd' 
             else:
                 symbol = 'add'
-        else:
+        elif ctx.op.text == '-':
             if tyype == TypeEnum.FLOAT:
                 symbol = 'fsub' 
             else:
                 symbol = 'sub'
-        out_reg = function_heaps[self.namefunc].get_new_register()
-        out += f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
-        expression = Expr(tyype, f'%{out_reg}',
-                            declarations=out, loaded=True)
-                            
-        return expression
 
-    def visitMultDivExpr(self, ctx: CymbolParser.MultDivExprContext):
-        expr_1 = self.visit(ctx.expr()[0])
-        expr_2 = self.visit(ctx.expr()[1])
-        tyype = TypeEnum.INT
-        out = ""
-        register_1 = expr_1.get_assigned_register()
-        if expr_1.declarations != "":
-            out += expr_1.declarations + '\n'
-
-        register_2 = expr_2.get_assigned_register()
-        if expr_2.declarations != "":
-            out += (expr_2.declarations + '\n')
-        #conversao de tipos
-        if expr_1.type == TypeEnum.FLOAT:
-            tyype = TypeEnum.FLOAT
-            if expr_2.type == TypeEnum.INT:
-                reg_aux = function_heaps[self.namefunc].get_new_register()
-                out += f'%{reg_aux} = sitofp i32 {register_2} to float\n'
-                register_2 = f'%{reg_aux}'
-        elif expr_2.type == TypeEnum.FLOAT:
-            tyype = TypeEnum.FLOAT
-            if expr_1.type == TypeEnum.INT:
-                reg_aux = function_heaps[self.namefunc].get_new_register()
-                out += f'%{reg_aux} = sitofp i32 {register_1} to float\n'
-                register_1 = f'%{reg_aux}'                
-        
-        if ctx.op.text == '*':
+        elif ctx.op.text == '*':
             if tyype == TypeEnum.FLOAT:
                 symbol = 'fmul' 
             else:
                 symbol = 'mul'
-        else:
+        elif ctx.op.text == '/':
             if tyype == TypeEnum.FLOAT:
                 symbol = 'fdiv' 
             else:
                 symbol = 'sdiv'
+
+        elif ctx.op.text == '<':
+            if tyype == TypeEnum.FLOAT:
+                symbol = 'fcmp olt' 
+            else:
+                symbol = 'icmp slt'
+
+        elif ctx.op.text == '<=':
+            if tyype == TypeEnum.FLOAT:
+                symbol = 'fcmp ole' 
+            else:
+                symbol = 'icmp sle'
+
+        elif ctx.op.text == '>':
+            if tyype == TypeEnum.FLOAT:
+                symbol = 'fcmp ogt' 
+            else:
+                symbol = 'icmp sgt'
+
+        elif ctx.op.text == '>=':
+            if tyype == TypeEnum.FLOAT:
+                symbol = 'fcmp oge' 
+            else:
+                symbol = 'icmp sge'
+
+        elif ctx.op.text == '==':
+            if tyype == TypeEnum.FLOAT:
+                symbol = 'fcmp oeq' 
+            else:
+                symbol = 'icmp eq'
+
+        elif ctx.op.text == '!=':
+            if tyype == TypeEnum.FLOAT:
+                symbol = 'fcmp one' 
+            else:
+                symbol = 'icmp ne'   
+
         out_reg = function_heaps[self.namefunc].get_new_register()
         out += f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
-        expression = Expr(tyype, f'%{out_reg}',
-                            declarations=out, loaded=True)
+        if boolret:
+            tyype = TypeEnum.BOOLEAN
+        expression = Expr(tyype, f'%{out_reg}', declarations=out, loaded= True, nmfnc=self.namefunc)
                             
         return expression
-
-    def visitAndOrExpr(self, ctx: CymbolParser.AndOrExprContext):
-        expr_1 = self.visit(ctx.expr()[0])
-        expr_2 = self.visit(ctx.expr()[1])
-
-        if ctx.op.text == '&&':
-            symbol = 'and'
-        else:
-            symbol = 'or'
-        
-        out = ""
-        if expr_1.type == expr_2.type:
-            tyype = expr_1.type
-
-            register_1 = expr_1.get_assigned_register()
-            if expr_1.declarations != "":
-                out += expr_1.declarations + '\n'
-
-            register_2 = expr_2.get_assigned_register()
-            if expr_2.declarations != "":
-                out += (expr_2.declarations + '\n')
-            
-            out_reg = function_heaps[self.namefunc].get_new_register()
-            out += f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
-            return Expr(tyype, f'%{out_reg}', declarations=out, loaded= True, nmfnc=self.namefunc)
-
-
-    def visitCompExpr(self, ctx: CymbolParser.CompExprContext):
-        expr_1 = self.visit(ctx.expr()[0])
-        expr_2 = self.visit(ctx.expr()[1])
-        
-        symbol = 'icmp '
-        if ctx.op.text == '<':
-            symbol += 'slt'
-        elif ctx.op.text == '<=':
-            symbol += 'sle'
-        elif ctx.op.text == '>':
-            symbol += 'sgt'
-        elif ctx.op.text == '>=':
-            symbol += 'sge'
-
-        out = ""
-        if expr_1.type == expr_2.type:
-            tyype = expr_1.type
-
-            register_1 = expr_1.get_assigned_register()
-            if expr_1.declarations != "":
-                out += expr_1.declarations + '\n'
-
-            register_2 = expr_2.get_assigned_register()
-            if expr_2.declarations != "":
-                out += (expr_2.declarations + '\n')
-            
-            out_reg = function_heaps[self.namefunc].get_new_register()
-            out += f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
-            return Expr(TypeEnum.BOOLEAN, f'%{out_reg}', declarations=out, loaded= True, nmfnc=self.namefunc)
-    
-    def visitEqualNotEqualExpr(self, ctx: CymbolParser.EqualNotEqualExprContext):
-        expr_1 = self.visit(ctx.expr()[0])
-        expr_2 = self.visit(ctx.expr()[1])
-        
-        symbol = 'icmp '
-        if ctx.op.text == '==':
-            symbol += 'eq'
-        else:
-            symbol += 'ne'
-        
-        out = ""
-        if expr_1.type == expr_2.type:
-            tyype = expr_1.type
-
-            register_1 = expr_1.get_assigned_register()
-            if expr_1.declarations != "":
-                out += expr_1.declarations + '\n'
-
-            register_2 = expr_2.get_assigned_register()
-            if expr_2.declarations != "":
-                out += (expr_2.declarations + '\n')
-            
-            out_reg = function_heaps[self.namefunc].get_new_register()
-            out += f'%{out_reg} = {symbol} {tyype} {register_1}, {register_2}\n'
-            return Expr(TypeEnum.BOOLEAN, f'%{out_reg}', declarations=out, loaded= True, nmfnc=self.namefunc)
-    
-    def visitNotExpr(self, ctx: CymbolParser.NotExprContext):
-        expr = self.visit(ctx.expr())
-        
-        tyype = expr.type
-        out = ""
-
-        register = expr.get_assigned_register()
-        if expr.declarations != "":
-            out += expr.declarations + '\n'
-
-        out_reg = function_heaps[self.namefunc].get_new_register()
-        out += f'%{out_reg} = icmp ne {tyype} {register}, 0\n'
-        return Expr(TypeEnum.BOOLEAN, f'%{out_reg}', declarations=out, loaded= True, nmfnc=self.namefunc)
