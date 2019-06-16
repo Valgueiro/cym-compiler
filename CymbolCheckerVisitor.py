@@ -9,14 +9,10 @@ def float_to_hex(f):
 
     while range(len(out), 18):
       out += '0'
-    
-# out = hex(struct.unpack('<Q', struct.pack('<d', f))[0])[0:11] + "0000000"
+
        
     return out
 
-
-#consertar conversao float/int de:
-#function call
 
 class TypeEnum(Enum):
     INT = "int"  # , llvm_type: "i32"}
@@ -85,7 +81,6 @@ class RegisterHeap():
         return register
 
 
-#register_heap = RegisterHeap()
 function_heaps = {}
 class CymbolCheckerVisitor(CymbolVisitor):
     funcparamtypes = {}
@@ -101,7 +96,7 @@ class CymbolCheckerVisitor(CymbolVisitor):
                 ret = self.visit(child)
                 if ret is not None:
                     output += ret
-        print(output)
+        # print(output)
         if len(output) > 0:
             file = open("out.ll", "w")
             file.write(output)
